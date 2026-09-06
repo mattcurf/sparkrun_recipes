@@ -9,7 +9,7 @@ usage instructions, license, and upstream notices.
 | Model | Configuration | Directory |
 | --- | --- | --- |
 | DeepSeek V4 Flash 0731 | TP2, FP8 KV, DSpark speculative decoding, 1M context | [`deepseek-v4-flash-0731/`](deepseek-v4-flash-0731/) |
-| Qwen3.8-Flash-Next | NVIDIA NVFP4, TP2 + expert parallelism, 262K context | [`qwen3.8-flash-next/`](qwen3.8-flash-next/) |
+| Qwen3.8-Flash-Next FP8 | Original Qwen FP8 quant, TP2, MTP3, 262K context | [`qwen3.8-flash-next/`](qwen3.8-flash-next/) |
 | Qwen3.8-Flash-Next NVFP4 + MTP | NVIDIA NVFP4, TP2 + expert parallelism, MTP3, 262K context | [`qwen3.8-flash-next-nvfp4-mtp/`](qwen3.8-flash-next-nvfp4-mtp/) |
 
 ## Install SparkRun
