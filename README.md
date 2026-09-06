@@ -37,6 +37,18 @@ sparkrun run <recipe.yaml> --cluster <cluster-name>
 sparkrun status
 ```
 
+## Tools
+
+[`tools/cleanup-memory.sh`](tools/cleanup-memory.sh) reclaims page cache and
+unified memory retained after a model is stopped. Pass every node explicitly:
+
+```bash
+tools/cleanup-memory.sh local <worker-host>
+```
+
+The script runs a privileged container on each selected host. Stop the
+inference workload first; remote hosts require passwordless SSH and Docker.
+
 ## License and attribution
 
 Except where a file or directory says otherwise, original material in this
