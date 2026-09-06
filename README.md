@@ -9,6 +9,7 @@ usage instructions, license, and upstream notices.
 | Model | Configuration | Directory |
 | --- | --- | --- |
 | DeepSeek V4 Flash 0731 | TP2, FP8 KV, DSpark speculative decoding, 1M context | [`deepseek-v4-flash-0731/`](deepseek-v4-flash-0731/) |
+| GLM-5.3-Flash EXL3 | EXL3/TR3 4 bpw, TP2, DFlash2, FP8 KV, 196K context | [`glm-5.3-flash-exl3/`](glm-5.3-flash-exl3/) |
 | Qwen3.8-Flash-Next FP8 | Original Qwen FP8 quant, TP2, MTP3, 262K context | [`qwen3.8-flash-next/`](qwen3.8-flash-next/) |
 | Qwen3.8-Flash-Next NVFP4 + MTP | NVIDIA NVFP4, TP2 + expert parallelism, MTP3, 262K context | [`qwen3.8-flash-next-nvfp4-mtp/`](qwen3.8-flash-next-nvfp4-mtp/) |
 
@@ -48,6 +49,11 @@ has standalone attribution. Major upstream work includes:
 
 - [SparkRun](https://github.com/spark-arena/sparkrun), Apache-2.0.
 - [vLLM](https://github.com/vllm-project/vllm), Apache-2.0.
+- [MiaAI-Lab/GLM-5.3-Flash-EXL3-2x-DGX-Sparks](https://github.com/MiaAI-Lab/GLM-5.3-Flash-EXL3-2x-DGX-Sparks),
+  MIT, which provides the GLM model conversion and patched runtime image.
+- [SparkRun recipe registry](https://github.com/spark-arena/recipe-registry),
+  MIT, whose experimental GLM recipe is the baseline for this collection's
+  tuned 196K-context variant.
 - [MiaAI-Lab/Qwen3.8-Flash-Next-Dual-DGX-Sparks](https://github.com/MiaAI-Lab/Qwen3.8-Flash-Next-Dual-DGX-Sparks),
   AGPL-3.0-or-later, whose NVIDIA-checkpoint and MTP investigations informed
   the Qwen integration.
