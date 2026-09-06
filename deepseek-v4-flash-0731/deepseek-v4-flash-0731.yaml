@@ -1,0 +1,210 @@
+# SPDX-License-Identifier: Unlicense
+
+model: deepseek-ai/DeepSeek-V4-Flash-0731
+container: ghcr.io/bjk110/vllm-spark@sha256:d8492e7677cf1b9aaa3344e0e6865efc468454013eee5ebabac85be90af027be
+defaults:
+  port: 8000
+  host: 0.0.0.0
+  tensor_parallel: 2
+  gpu_memory_utilization: 0.78
+  max_model_len: 1048576
+  max_num_batched_tokens: 8192
+  max_num_seqs: 12
+  served_model_name: deepseek-v4-flash-0731
+  tool_call_parser: deepseek_v4
+  pipeline_parallel: 1
+  kv_cache_dtype: fp8
+  block_size: 256
+  tokenizer_mode: deepseek_v4
+  reasoning_parser: deepseek_v4
+  speculative_config: '{"method":"dspark","num_speculative_tokens":3,"draft_sample_method":"probabilistic"}'
+  long_prefill_token_threshold: 1024
+  reasoning_config: '{"reasoning_parser":"deepseek_v4","reasoning_start_str":"<think>","reasoning_end_str":"</think>"}'
+  chat_template_kwargs: '{"thinking":false}'
+env:
+  PYTHONUNBUFFERED: '1'
+  VLLM_ENGINE_READY_TIMEOUT_S: '3600'
+  VLLM_ALLOW_LONG_MAX_MODEL_LEN: '1'
+  VLLM_TRITON_MLA_SPARSE: '1'
+  VLLM_SPARSE_INDEXER_MAX_LOGITS_MB: '256'
+  VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS: '0'
+  VLLM_SKIP_INIT_MEMORY_CHECK: '1'
+  VLLM_CACHE_ROOT: /cache/huggingface/sr-cache/vllm
+  FLASHINFER_WORKSPACE_BASE: /cache/huggingface/sr-cache/vllm
+  FLASHINFER_CUBIN_DIR: /cache/huggingface/sr-cache/flashinfer-cubin
+  DG_JIT_CACHE_DIR: /cache/huggingface/sr-cache/deepgemm
+  TILELANG_CACHE_DIR: /cache/huggingface/sr-cache/tilelang
+  TORCHINDUCTOR_CACHE_DIR: /cache/huggingface/sr-cache/inductor
+  TRITON_CACHE_DIR: /cache/huggingface/sr-cache/triton
+  TORCH_EXTENSIONS_DIR: /cache/huggingface/sr-cache/torch-ext
+  HF_HUB_DISABLE_XET: '1'
+  VLLM_USE_FLASHINFER_SAMPLER: '1'
+  VLLM_USE_B12X_MOE: '1'
+  VLLM_USE_B12X_WO_PROJECTION: '1'
+  VLLM_USE_B12X_MHC: '1'
+  VLLM_B12X_W4A16_FORCE_BLOCKS_PER_SM: '0'
+  VLLM_B12X_W4A16_FORCE_BLOCKS_MAX_M: '16'
+  B12X_W4A16_TC_DECODE: '0'
+  VLLM_DSPARK_CONFIDENCE_THRESHOLD: '0.0'
+  VLLM_DSPARK_CONFIDENCE_SCHEDULER: 'off'
+  VLLM_DSPARK_LOCAL_ARGMAX: '1'
+  VLLM_DSPARK_REPLICATE_MARKOV_W1: '1'
+  VLLM_DSPARK_FUSED_MARKOV_ARGMAX: '0'
+  VLLM_DSPARK_GPU_REJECTED_CONTEXT_MASK: '1'
+  VLLM_DSPARK_REFERENCE_KV_QUANT_DEQUANT: '0'
+  VLLM_DSPARK_HARDWARE_SCHEDULER_EARLY_STOP: '1'
+  VLLM_DSV4_B12X_COMPRESSED_MLA: '0'
+  VLLM_DSV4_DSPARK_DEFER_TARGET_CAPTURE: '0'
+  VLLM_DSV4_DSPARK_DEFER_TARGET_CAPTURE_EXACT: '0'
+  DSPARK_SLOT_CLAMP: '1'
+  TORCH_CUDA_ARCH_LIST: 12.1a
+  FLASHINFER_CUDA_ARCH_LIST: 12.1a
+  FLASHINFER_DISABLE_VERSION_CHECK: '1'
+  TILELANG_CLEANUP_TEMP_FILES: '1'
+  DG_JIT_USE_NVRTC: '0'
+  DG_JIT_NVCC_COMPILER: /opt/env/bin/nvcc
+  PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
+  NCCL_CUMEM_ENABLE: '0'
+  NCCL_NVLS_ENABLE: '0'
+command: |
+  export PATH=/opt/env/bin:/opt/env/nvvm/bin:/opt/env/targets/sbsa-linux/nvvm/bin:$PATH &&
+  export CUDA_HOME=/opt/env/targets/sbsa-linux CUDA_PATH=/opt/env/targets/sbsa-linux CUDAToolkit_ROOT=/opt/env/targets/sbsa-linux &&
+  export LD_LIBRARY_PATH=/opt/env/lib:/opt/env/targets/sbsa-linux/lib:$LD_LIBRARY_PATH &&
+  /opt/env/bin/vllm serve {model} \
+    --served-model-name {served_model_name} \
+    --host {host} \
+    --port {port} \
+    --trust-remote-code \
+    --tensor-parallel-size {tensor_parallel} \
+    --pipeline-parallel-size {pipeline_parallel} \
+    --kv-cache-dtype {kv_cache_dtype} \
+    --block-size {block_size} \
+    --max-model-len {max_model_len} \
+    --max-num-seqs {max_num_seqs} \
+    --max-num-batched-tokens {max_num_batched_tokens} \
+    --gpu-memory-utilization {gpu_memory_utilization} \
+    --enable-prefix-caching \
+    --async-scheduling \
+    --enable-chunked-prefill \
+    --long-prefill-token-threshold {long_prefill_token_threshold} \
+    --max-num-partial-prefills 1 \
+    --speculative-config '{speculative_config}' \
+    --tokenizer-mode {tokenizer_mode} \
+    --distributed-executor-backend mp \
+    --tool-call-parser {tool_call_parser} \
+    --enable-auto-tool-choice \
+    --reasoning-parser {reasoning_parser} \
+    --reasoning-config '{reasoning_config}' \
+    --default-chat-template-kwargs '{chat_template_kwargs}' \
+    --generation-config vllm \
+    --enable-flashinfer-autotune
+runtime: vllm
+min_nodes: 2
+metadata:
+  description: 'DeepSeek V4 Flash 0731 (official release) with DSpark speculative decoding on 2x DGX Spark (TP=2): 1M-token context, 4-bit nvfp4_ds_mla KV cache, B12X MoE, draft-loader Patch 4. Upstream-measured ~55 tok/s mean / 66 peak by content (78 peak-finder). Port of tonyd2wild/DeepSeek-v4-Flash-0731-DSpark-1M-NVFP4-KV-2x-DGX-Spark.'
+  maintainer: tonyd2wild
+  category: agent
+  kv_dtype: nvfp4
+  model_dtype: fp8
+  num_layers: 43
+  num_kv_heads: 1
+  head_dim: 512
+  quantization: fp8
+  quant_bits: 8
+  model_type: deepseek_v4
+  kv_lora_rank: 448
+  qk_rope_head_dim: 64
+  compress_ratios:
+    - 0
+    - 0
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 128
+    - 4
+    - 0
+    - 0
+    - 0
+  index_head_dim: 128
+recipe_version: '2'
+max_nodes: 2
+pre_exec:
+  - |
+    if [ ! -x /usr/bin/kill ] && [ ! -x /bin/kill ] && [ ! -x /usr/local/bin/kill ]; then
+      printf '#!/bin/bash\nbuiltin kill "$@"\n' > /usr/local/bin/kill
+      chmod +x /usr/local/bin/kill
+      echo "[dspark-overlay] installed /usr/local/bin/kill shim (image has no kill binary)"
+    fi
+  - |
+    set -eu
+    VLLM_ROOT=/opt/env/lib/python3.12/site-packages/vllm
+    SRC=/tmp/dspark-overlay-src
+    COMMIT=d728faee9f5a8d5ebafe7bc44bca6c5d8d0d192f
+    if [ -e "$VLLM_ROOT/.sparkrun-dspark-overlay-$COMMIT" ]; then
+      echo "[dspark-overlay] already applied, skipping"
+      exit 0
+    fi
+    echo "[dspark-overlay] fetching tonyd2wild recipe @ $COMMIT"
+    rm -rf "$SRC" /tmp/dspark-overlay.tar.gz
+    mkdir -p "$SRC"
+    /opt/env/bin/python -c "import sys,urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])" \
+      "https://codeload.github.com/tonyd2wild/DeepSeek-v4-Flash-0731-DSpark-1M-NVFP4-KV-2x-DGX-Spark/tar.gz/$COMMIT" \
+      /tmp/dspark-overlay.tar.gz
+    tar -xzf /tmp/dspark-overlay.tar.gz -C "$SRC" --strip-components=1
+    echo "[dspark-overlay] applying base DSpark overlay files"
+    cp -a "$SRC/recipe/overlay/vllm/." "$VLLM_ROOT/"
+    for stage in a b c; do
+      echo "[dspark-overlay] applying nvfp4 stage-$stage patch"
+      sed -n "/<<'PY'/,/^PY$/p" "$SRC/recipe/nvfp4/Dockerfile.stage-$stage" | sed '1d;$d' | /opt/env/bin/python -
+    done
+    # NOTE: upstream's apply-nonuniform-guard.py is intentionally NOT run.
+    # It exists for foreign prebuilt images whose proposer lacks the
+    # concurrency fix; this overlay's proposer handles non-uniform batches
+    # natively, and stacking the guard on top of it short-circuits that path
+    # into always-rejected dummy drafts ("Drafted: N, Accepted: 0").
+    echo "[dspark-overlay] verifying Patch 3 (cold-prefill garble fix) is present"
+    grep -q "is_prefill_chunk" "$VLLM_ROOT/v1/core/sched/scheduler.py" \
+      || { echo "[dspark-overlay] FATAL: Patch 3 missing — cold prefills would garble"; exit 1; }
+    echo "[dspark-overlay] verifying Patch 4 (draft shared-expert loader fix) is present"
+    grep -q "shared_experts.gate_up_proj" "$VLLM_ROOT/v1/spec_decode/dspark.py" \
+      || { echo "[dspark-overlay] FATAL: Patch 4 missing — 0731 would run at half speed"; exit 1; }
+    find "$VLLM_ROOT" -name __pycache__ -type d -prune -exec rm -rf {} + || true
+    /opt/env/bin/python -m py_compile "$VLLM_ROOT/envs.py" "$VLLM_ROOT/v1/core/sched/scheduler.py" "$VLLM_ROOT/v1/spec_decode/dspark.py" "$VLLM_ROOT/v1/spec_decode/dspark_proposer.py"
+    touch "$VLLM_ROOT/.sparkrun-dspark-overlay-$COMMIT"
+    echo "[dspark-overlay] done: runtime now equivalent to vllm-dspark-runtime:dspark-nvfp4-stage-c @ $COMMIT"
