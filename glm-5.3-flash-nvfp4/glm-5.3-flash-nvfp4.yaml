@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: Unlicense
+recipe_version: "2"
+model: nvidia/GLM-5.3-Flash-NVFP4
+model_revision: 423acf37583782c51c142d145aef733d72943d93
+runtime: vllm-distributed
+# Pinned NVIDIA image plus a native NoPE sparse-attention plugin (Dockerfile).
+container: glm53-flash-nvfp4-sparkrun-v1
+min_nodes: 2
+max_nodes: 2
+cluster_only: true
+
+metadata:
+  description: NVIDIA GLM-5.3-Flash NVFP4 on two DGX Sparks with TP2, expert parallelism, native NoPE sparse attention, and FP8 KV cache
+  # Rounded-up GiB from the pinned checkpoint index's 204419110596 bytes.
+  # Avoid SparkRun's parameter estimate undercounting this packed checkpoint.
+  # This is a sizing estimate, not a measurement of runtime allocations.
+  model_vram: 190.39
+  kv_lora_rank: 512
+
+mods:
+  - use-official-vllm
+
+executor_config:
+  entrypoint: ""
+  # Preserve distributed-worker IPC after the remote SSH session exits.
+  user: root
+  shm_size: 32gb
+
+defaults:
+  host: 0.0.0.0
+  port: 8000
+  served_model_name: GLM-5.3-Flash-NVFP4
+  revision: 423acf37583782c51c142d145aef733d72943d93
+  tensor_parallel: 2
+  gpu_memory_utilization: 0.85
+  max_model_len: 32768
+  max_num_seqs: 4
+  max_num_batched_tokens: 2048
+  kv_cache_dtype: fp8
+
+env:
+  VLLM_GLM53_CUDA_SPARSE_MLA: "1"
+  # NVIDIA supplies calibrated activation scales; do not enable the plugin's
+  # optional weight-only MoE scale override.
+  PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
+  VLLM_NO_USAGE_STATS: "1"
+  DO_NOT_TRACK: "1"
+
+command: |
+  vllm serve {model} \
+    --revision {revision} \
+    --host {host} \
+    --port {port} \
+    --served-model-name {served_model_name} \
+    --tensor-parallel-size {tensor_parallel} \
+    --gpu-memory-utilization {gpu_memory_utilization} \
+    --max-model-len {max_model_len} \
+    --max-num-seqs {max_num_seqs} \
+    --max-num-batched-tokens {max_num_batched_tokens} \
+    --kv-cache-dtype {kv_cache_dtype} \
+    --load-format safetensors \
+    --safetensors-load-strategy lazy \
+    --enable-expert-parallel \
+    --enable-ep-weight-filter \
+    --all2all-backend allgather_reducescatter \
+    --enable-chunked-prefill \
+    --no-enable-flashinfer-autotune \
+    --reasoning-parser glm45 \
+    --tool-call-parser glm47 \
+    --enable-auto-tool-choice \
+    --enforce-eager
