@@ -19,5 +19,5 @@
 
 No model weights or container images are included in this directory. Apart
 from the Apache-2.0 adaptation script, original recipe, build files, test, and
-documentation are dedicated to the public domain under the repository's
-[Unlicense](../LICENSE), without warranty.
+documentation are dedicated to the public domain under the recipe's
+[Unlicense](LICENSE), without warranty.

@@ -134,7 +134,7 @@ logits, and different token counts for BF16 and FP8 KV.
 ## License and attribution
 
 Original recipe, build files, test, and documentation are covered by the
-repository's [Unlicense](../LICENSE). The backend adaptation script contains
+recipe's [Unlicense](LICENSE). The backend adaptation script contains
 Apache-2.0 source excerpts and is distributed under [Apache-2.0](LICENSE-APACHE).
 The configuration follows the deployment guidance in NVIDIA's model card. See
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for upstream licenses. Model
