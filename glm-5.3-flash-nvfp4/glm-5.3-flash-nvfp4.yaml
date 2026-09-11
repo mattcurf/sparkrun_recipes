@@ -4,7 +4,7 @@ model: nvidia/GLM-5.3-Flash-NVFP4
 model_revision: 423acf37583782c51c142d145aef733d72943d93
 runtime: vllm-distributed
 # Pinned NVIDIA image plus a native NoPE sparse-attention plugin (Dockerfile).
-container: glm53-flash-nvfp4-sparkrun-v1
+container: glm53-flash-nvfp4-sparkrun-v2
 min_nodes: 2
 max_nodes: 2
 cluster_only: true
@@ -26,6 +26,16 @@ executor_config:
   user: root
   shm_size: 32gb
 
+distribution_config:
+  models:
+    entries:
+      - name: nvidia/GLM-5.3-Flash-NVFP4
+        target: [-1]
+        revision: 423acf37583782c51c142d145aef733d72943d93
+      - name: incoai/GLM-5.3-Flash-DFlash2
+        target: [-1]
+        revision: dc77ff1c99eeb2df044ee3d4f0094eb033fee410
+
 defaults:
   host: 0.0.0.0
   port: 8000
@@ -37,6 +47,10 @@ defaults:
   max_num_seqs: 4
   max_num_batched_tokens: 2048
   kv_cache_dtype: fp8
+  # Fixed per-GPU budget avoids transient unified-memory profiling differences.
+  kv_cache_memory_bytes: 4294967296
+  moe_backend: flashinfer_cutlass
+  speculative_config: '{"method":"dflash","model":"incoai/GLM-5.3-Flash-DFlash2","revision":"dc77ff1c99eeb2df044ee3d4f0094eb033fee410","num_speculative_tokens":7,"kv_cache_dtype":"auto"}'
 
 env:
   VLLM_GLM53_CUDA_SPARSE_MLA: "1"
@@ -58,6 +72,10 @@ command: |
     --max-num-seqs {max_num_seqs} \
     --max-num-batched-tokens {max_num_batched_tokens} \
     --kv-cache-dtype {kv_cache_dtype} \
+    --kv-cache-memory-bytes {kv_cache_memory_bytes} \
+    --moe-backend {moe_backend} \
+    --speculative-config '{speculative_config}' \
+    --default-chat-template-kwargs '{"reasoning_effort":"low"}' \
     --load-format safetensors \
     --safetensors-load-strategy lazy \
     --enable-expert-parallel \

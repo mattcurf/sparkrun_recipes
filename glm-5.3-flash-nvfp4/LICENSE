@@ -20,6 +20,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <https://unlicense.org>.
 
-The backend adaptation script contains Apache-2.0-licensed upstream excerpts
-and remains under the Apache License 2.0 reproduced in LICENSE-APACHE. See
+The runtime adaptation scripts and source-overlay tests contain Apache-2.0
+upstream excerpts and remain under the Apache License 2.0 reproduced in
+LICENSE-APACHE. Files identify these exceptions with SPDX headers. See
 THIRD_PARTY_NOTICES.md for attribution and upstream license details.

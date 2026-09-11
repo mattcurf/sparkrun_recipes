@@ -14,3 +14,10 @@ RUN python3 /tmp/patch_sparse_mla.py /tmp/glm53-sparse-mla/glm53_sparse_mla/back
     && cp -r /tmp/glm53-sparse-mla/tests /opt/glm53-sparse-mla/tests \
     && cp /tmp/glm53-sparse-mla/LICENSE /opt/glm53-sparse-mla/LICENSE \
     && rm -rf /tmp/glm53-sparse-mla /tmp/glm53-sparse-mla.tar.gz /tmp/patch_sparse_mla.py
+
+# Keep the image's native DFlash2 implementation; adapt only GLM target glue,
+# hybrid KV grouping, and SM121 correctness guards.
+COPY patch_dflash2.py patch_sm121.py patch_nvidia_mtp.py /opt/glm53-sparse-mla/
+RUN python3 /opt/glm53-sparse-mla/patch_dflash2.py \
+    && python3 /opt/glm53-sparse-mla/patch_sm121.py \
+    && python3 /opt/glm53-sparse-mla/patch_nvidia_mtp.py
