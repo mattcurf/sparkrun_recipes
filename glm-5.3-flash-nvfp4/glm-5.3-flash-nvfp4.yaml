@@ -43,7 +43,7 @@ defaults:
   revision: 423acf37583782c51c142d145aef733d72943d93
   tensor_parallel: 2
   gpu_memory_utilization: 0.85
-  max_model_len: 32768
+  max_model_len: 196608
   max_num_seqs: 4
   max_num_batched_tokens: 2048
   kv_cache_dtype: fp8

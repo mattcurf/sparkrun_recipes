@@ -14,7 +14,7 @@ import urllib.request
 from pathlib import Path
 
 
-def request(base, payload):
+def request(base, payload, timeout=240):
     started = time.monotonic()
     first = None
     content, reasoning, calls = [], [], []
@@ -26,10 +26,10 @@ def request(base, payload):
         headers={"Content-Type": "application/json"},
     )
     done = False
-    with urllib.request.urlopen(req, timeout=300) as response:
+    with urllib.request.urlopen(req, timeout=timeout) as response:
         for line in response:
-            if time.monotonic() - started > 240:
-                raise TimeoutError("request exceeded four-minute wall-clock budget")
+            if time.monotonic() - started > timeout:
+                raise TimeoutError(f"request exceeded {timeout}-second budget")
             if not line.startswith(b"data: "):
                 continue
             if line.strip() == b"data: [DONE]":
@@ -98,7 +98,12 @@ def main():
     parser.add_argument("--rounds", type=int, default=2)
     parser.add_argument("--long-context", action="store_true")
     parser.add_argument("--quality-stress", action="store_true")
+    parser.add_argument("--context-lines", type=int, default=2000)
+    parser.add_argument("--long-concurrency", type=int, choices=range(5), default=4)
+    parser.add_argument("--request-timeout", type=int, default=240)
     args = parser.parse_args()
+    if args.context_lines < 1 or args.request_timeout < 1:
+        parser.error("context-lines and request-timeout must be positive")
     rows = []
 
     def run(name, prompt, expected=None, max_tokens=1024):
@@ -113,7 +118,7 @@ def main():
             payload["response_format"] = {"type": "json_object"}
         if args.reasoning != "default":
             payload["chat_template_kwargs"] = {"reasoning_effort": args.reasoning}
-        result = request(args.base, payload)
+        result = request(args.base, payload, timeout=args.request_timeout)
         result["name"] = name
         answer = result["content"].strip()
         passed = result["finish_reason"] == "stop" and bool(answer)
@@ -192,7 +197,8 @@ def main():
             )
     if args.long_context:
         long_prompt = (
-            "The orchard has apple trees. The river runs beside the orchard.\n" * 2000
+            "The orchard has apple trees. The river runs beside the orchard.\n"
+            * args.context_lines
             + "\nIgnore the orchard. Write 40 short Python functions clamp_00 through clamp_39, each returning min(max(x, low), high). Output code only."
         )
         rows.append(run("perf-long", long_prompt, max_tokens=384))
@@ -207,7 +213,7 @@ def main():
                     f"Example set {n}.\n" + long_prompt,
                     max_tokens=384,
                 ),
-                range(4),
+                range(args.long_concurrency),
             ):
                 rows.append(result)
                 args.output.write_text(

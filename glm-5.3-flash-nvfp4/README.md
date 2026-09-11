@@ -17,15 +17,15 @@ a native NoPE attention plugin to run on two Sparks.
 - ModelOpt NVFP4 quantization is detected from the checkpoint metadata.
 - TP2, expert parallelism, allgather/reduce-scatter communication, FP8 KV cache,
   and **DFlash2 with seven speculative tokens by default**. Native MTP at
-  depths 1, 2, and 4 is also tested and selectable.
-- Settings: 32,768-token context, four sequences, 2,048-token prefill
+  depths 1, 2, and 4 was also tested at 32K and is selectable.
+- Settings: **196,608-token (192K) context**, four sequences, 2,048-token prefill
   batches, an explicit **4 GiB KV-cache budget per GPU**, and eager execution.
   Explicit cache sizing overrides automatic `gpu_memory_utilization` sizing.
   MTP's BF16 draft needs additional memory, and automatic profiling after
-  unified-memory loading produced inconsistent budgets across ranks. Larger context
-  limits and higher concurrency are not validated by this recipe. Four short
-  requests can run together; full-context requests can queue behind the cache
-  admission limit (approximately three at 32K with the DFlash2 default).
+  unified-memory loading produced inconsistent budgets across ranks. Four short
+  requests can run together; the cache budget allows **one full-192K request**
+  at a time, with additional long requests queued. Context includes both prompt
+  and output tokens. Context above 192K and concurrency above four are not validated.
 - Uses the checkpoint's chat template and GLM reasoning/tool parsers, with
   **low reasoning effort by default**. Clients can explicitly request high/max
   effort. Set a bounded `max_tokens` and check `finish_reason`: a `length` stop
@@ -106,6 +106,7 @@ sparkrun run glm-5.3-flash-nvfp4.yaml --cluster <two-node-cluster> \
 # Native MTP alternative. Depth 4 was fastest of the tested MTP depths 1/2/4.
 # The BF16 draft needs its own backend selection, not forced NVFP4 CUTLASS.
 sparkrun run glm-5.3-flash-nvfp4.yaml --cluster <two-node-cluster> \
+  -o max_model_len=32768 \
   -o 'speculative_config={"method":"mtp","num_speculative_tokens":4,"moe_backend":"auto"}'
 
 # Default: DFlash2's trained eight-token block, seven drafts plus one bonus.
@@ -145,6 +146,10 @@ python3 benchmark.py --base http://<head-node>:8000 --output results.json
 # Final regression: single and four concurrent decodes beyond 24K context.
 python3 benchmark.py --base http://<head-node>:8000 \
   --long-context --quality-stress --output long-context-results.json
+# Near the 192K limit: approximately 195K input tokens, one long request.
+python3 benchmark.py --base http://<head-node>:8000 --rounds 0 \
+  --long-context --context-lines 13000 --long-concurrency 0 \
+  --request-timeout 1200 --output 192k-results.json
 ```
 
 The harness records complete replies, finish reasons, API token counts, latency,
@@ -163,11 +168,38 @@ total request wall time, not by counting SSE chunks. Inspect speculative
 acceptance metrics alongside throughput; this is a functional comparison,
 not a general quality benchmark.
 
-### Measured results on `first_pair`
+### Current 192K deployment on `first_pair`
+
+The API advertises **196,608 tokens**, matching the EXL3 recipe. The target,
+DFlash2-7, image, 4 GiB per-GPU KV pool, and 2,048-token prefill batches are
+unchanged from the earlier 32K deployment.
+
+- All ten common API checks passed; the short-context code probes measured
+  **59.06 / 56.69 output tokens/s**.
+- **195,045 prompt tokens + 384 output tokens** completed in **121.46 seconds**,
+  including **115.21 seconds to first token**. This throughput probe deliberately
+  reached its output cap; no corruption, repetition lock, or engine failure occurred.
+- A separate **195,029-token retrieval prompt** correctly returned all three
+  audit codes placed near the beginning, middle, and end. It completed normally
+  in **112.23 seconds**, with no reasoning tokens.
+- Health/model registration, streaming, automatic JSON tool calling, a
+  7,532-token prompt, and four short concurrent requests passed after the
+  near-limit decode.
+
+The cache allocator reports 155 pool blocks and 1.78 maximum-concurrency units
+at 192K: budget for **one fully occupied 192K request**, not two. Its displayed
+350,278-token cache-size estimate is derived from concurrency and is not the
+per-request context limit. Long-prompt prefill takes substantially longer than
+short-prompt generation. These smoke tests do not establish general long-context
+reasoning/retrieval quality, complex vision support, or performance above 192K.
+
+### Original 32K-profile measurements on `first_pair`
 
 Two 384-output-token code probes, identical prompts and greedy sampling, on
 an otherwise idle two-Spark service. Rates include request overhead and count
-both reasoning and final-answer tokens; these are **short-context** results.
+both reasoning and final-answer tokens; these are **short-context** results
+from the earlier 32K deployment. To reproduce that comparison, launch profiles
+with `-o max_model_len=32768`; the recipe now defaults to 192K.
 
 | Profile | Output tokens/s, runs 1 / 2 | Functional checks |
 | --- | --- | --- |
