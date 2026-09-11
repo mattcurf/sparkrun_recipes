@@ -137,6 +137,52 @@ def main():
             and 250000 <= result["usage"]["prompt_tokens"] < 262144
         )
         record(result)
+    tool_payload = {
+        "model": args.model,
+        "messages": [
+            {
+                "role": "user",
+                "content": "Use get_weather to check the weather in Paris.",
+            }
+        ],
+        "temperature": 0,
+        "max_tokens": 512,
+        "chat_template_kwargs": {"reasoning_effort": "low"},
+        "tools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_weather",
+                    "description": "Get the current weather for a city.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"city": {"type": "string"}},
+                        "required": ["city"],
+                    },
+                },
+            }
+        ],
+        "tool_choice": "auto",
+    }
+    req = urllib.request.Request(
+        args.base + "/v1/chat/completions",
+        data=json.dumps(tool_payload).encode(),
+        headers={"Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=120) as response:
+        reply = json.load(response)
+    choice = reply["choices"][0]
+    calls = choice["message"].get("tool_calls") or []
+    correct = choice["finish_reason"] == "tool_calls" and len(calls) == 1
+    if correct:
+        function = calls[0]["function"]
+        try:
+            correct = function["name"] == "get_weather" and json.loads(
+                function["arguments"]
+            ) == {"city": "Paris"}
+        except ValueError:
+            correct = False
+    record({"name": "automatic-tool-call", "reply": reply, "passed": correct})
     with urllib.request.urlopen(args.base + "/metrics", timeout=10) as response:
         args.output.with_suffix(".metrics.txt").write_bytes(response.read())
     if not all(r["passed"] for r in rows):

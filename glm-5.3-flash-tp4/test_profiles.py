@@ -38,10 +38,15 @@ class ProfilesTest(unittest.TestCase):
                 self.assertEqual(speculation["revision"], draft["revision"])
                 self.assertIn("--enable-expert-parallel", profile["command"])
                 self.assertIn("--enable-chunked-prefill", profile["command"])
+                self.assertEqual(defaults["execution_flags"], "--no-enforce-eager")
+                self.assertEqual(profile["env"]["OMP_NUM_THREADS"], "1")
+                expected_kv_gib = 12 if profile["model"].startswith("nvidia/") else 8
+                self.assertEqual(
+                    defaults["kv_cache_memory_bytes"], expected_kv_gib * 2**30
+                )
         for key in (
             "max_num_seqs",
             "max_num_batched_tokens",
-            "kv_cache_memory_bytes",
             "speculative_config",
             "execution_flags",
         ):

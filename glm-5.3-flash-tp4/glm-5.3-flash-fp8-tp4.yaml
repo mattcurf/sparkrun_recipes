@@ -39,13 +39,15 @@ defaults:
   max_num_seqs: 4
   max_num_batched_tokens: 8192
   kv_cache_dtype: fp8
-  kv_cache_memory_bytes: 12884901888
+  # FP8 weights leave less headroom; 12 GiB hit the GB10 allocation ceiling.
+  kv_cache_memory_bytes: 8589934592
   # Native block-scaled W8A8; SM121 CUTLASS FP8 MoE lacks this scale scheme.
   moe_backend: triton
   speculative_config: '{"method":"dflash","model":"incoai/GLM-5.3-Flash-DFlash2","revision":"dc77ff1c99eeb2df044ee3d4f0094eb033fee410","num_speculative_tokens":7,"kv_cache_dtype":"auto"}'
-  execution_flags: --enforce-eager
+  execution_flags: --no-enforce-eager
 env:
   VLLM_GLM53_CUDA_SPARSE_MLA: "1"
+  OMP_NUM_THREADS: "1"
   PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
   VLLM_NO_USAGE_STATS: "1"
   DO_NOT_TRACK: "1"

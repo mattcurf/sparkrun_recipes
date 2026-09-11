@@ -4,6 +4,11 @@ Separate TP4 recipes comparing **model-weight quantization**, not KV-cache
 formats. Existing two-node recipes are unchanged. Both profiles have a
 **262,144-token (256K) total context window**, including prompt and output.
 
+**Both profiles tested on four Sparks, 2026-09-11. NVIDIA NVFP4 is recommended.**
+See [measured results, raw receipts, and limitations](RESULTS.md), including
+successful ~256K-input retrieval/decode and the FP8 cache-allocation failure
+that required its smaller pool.
+
 | Profile | Weights | MoE computation |
 | --- | --- | --- |
 | `glm-5.3-flash-nvfp4-tp4.yaml` | `nvidia/GLM-5.3-Flash-NVFP4` | Calibrated CUTLASS W4A4 |
@@ -12,9 +17,19 @@ formats. Existing two-node recipes are unchanged. Both profiles have a
 Both retain TP4 plus expert parallelism, allgather/reduce-scatter, native NoPE
 sparse attention, FP8 target KV, BF16 draft KV, DFlash2 with seven speculative
 tokens, chunked prefill, GLM tool/reasoning parsers, and low reasoning effort.
-The initial comparison uses four sequences, 8,192-token prefill batches,
-12 GiB KV per GPU, and eager execution. CUDA graphs are a separate evaluation;
-do not infer graph compatibility from successful eager decoding.
+Both use four sequences, 8,192-token prefill batches, CUDA graphs for the target
+and drafter, and one OpenMP thread to avoid CPU spin-wait contention. NVFP4
+reserves **12 GiB KV per GPU**; FP8 uses **8 GiB** because its larger weights
+leave less allocation headroom. These are different cache capacities at the
+same per-request context limit, not different KV precision. Additional long
+requests may queue when the pool is full.
+
+The explicit KV budget overrides automatic utilization-based sizing. The 80%
+utilization setting still controls the startup free-memory check; 85% rejected
+the four-node setup after distributed initialization. For the eager control,
+override `-o execution_flags=--enforce-eager`; the recorded initial NVFP4 eager
+baseline also used four OpenMP threads, so its comparison with the tuned
+profile is not a graph-only A/B.
 
 ## Build and run
 
@@ -62,6 +77,8 @@ python3 glm-5.3-flash-tp4/evaluate.py --model "$MODEL" \
 python3 glm-5.3-flash-nvfp4/benchmark.py --model "$MODEL" \
   --reasoning low --rounds 0 --long-context --context-lines 17100 \
   --long-concurrency 0 --request-timeout 1800 --output /tmp/256k-decode.json
+# Repeat the short evaluation after shapes are warm; use this for warm rates.
+python3 glm-5.3-flash-tp4/evaluate.py --model "$MODEL" --output /tmp/warm.json
 ```
 
 The evaluation records full replies, API token counts, TTFT, total request
@@ -75,6 +92,14 @@ and requires at least 250,000 actual prompt tokens.
 These are functional probes and workload-specific measurements, not a general
 model-quality benchmark. Generated code is not executed. More weight precision
 does not automatically imply better quality or speed on these workloads.
+
+CPU-only checks (PyYAML required):
+
+```bash
+python3 -m unittest discover -s glm-5.3-flash-tp4 -v
+uvx ruff check glm-5.3-flash-tp4/*.py
+uvx ruff format --check glm-5.3-flash-tp4/*.py
+```
 
 ## License and references
 

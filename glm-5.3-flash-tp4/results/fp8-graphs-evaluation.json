@@ -1,0 +1,306 @@
+[
+  {
+    "content": "```python\ndef merge_intervals(intervals):\n    if not intervals:\n        return []\n    intervals = sorted(intervals, key=lambda x: x[0])\n    merged = [list(intervals[0])]\n    for start, end in intervals[1:]:\n        if start <= merged[-1][1]:\n            merged[-1][1] = max(merged[-1][1], end)\n        else:\n            merged.append([start, end])\n    return [tuple(iv) for iv in merged]\n\n\nassert merge_intervals([(1, 3), (2, 6), (8, 10), (15, 18)]) == [(1, 6), (8, 10), (15, 18)]\nassert merge_intervals([(1, 4), (4, 5)]) == [(1, 5)]\nassert merge_intervals([(5, 7), (1, 2)]) == [(1, 2), (5, 7)]\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 42,
+      "total_tokens": 243,
+      "completion_tokens": 201,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 3.9550768020562828,
+    "ttft_seconds": 0.446413850877434,
+    "output_tokens_per_second": 50.820757739899804,
+    "corruption": false,
+    "repetition": false,
+    "name": "code-0",
+    "passed": true,
+    "decode_tokens_per_second": 57.00177041308671
+  },
+  {
+    "content": "In a distributed database, data is typically replicated across multiple nodes for availability and performance. When a client writes a value, the update may be committed on a primary node or a majority quorum, but replicas propagate changes asynchronously. If a subsequent read is routed to a replica that hasn't yet received the update, the client sees an older version of the data—a stale read. This is a fundamental consequence of eventual consistency: prioritizing availability and low latency means reads aren't guaranteed to reflect the latest committed write, especially across geographically distributed systems where replication lag can span milliseconds to seconds.\n\nRead-your-writes consistency guarantees that a client always sees its own prior writes, even if other clients' data may still be lagging. One common technique is session stickiness: route all of a client's reads and writes within a session to the same node (e.g., the leader for that partition), so the client never reads from a lagging replica. Alternatively, the system can track version metadata—the client records the timestamp or version stamp returned with each write, and presents it on subsequent reads. The database then checks whether the target replica has caught up to that version; if not, it either waits, redirects the read to a sufficiently up-to-date replica, or proxies the read through the primary.\n\nThe tradeoff is consistency versus availability and latency. Version-tracking approaches add overhead and can block reads during replication lag or failovers, while sticky sessions reduce load-balancing flexibility. Systems like MongoDB (causal consistency), Cassandra (read repair with timestamps), and CockroachDB offer varying mechanisms, letting applications choose the guarantee level their correctness requirements demand.",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 43,
+      "total_tokens": 373,
+      "completion_tokens": 330,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 14.516733705997467,
+    "ttft_seconds": 0.5038357099983841,
+    "output_tokens_per_second": 22.732386408911204,
+    "corruption": false,
+    "repetition": false,
+    "name": "prose-0",
+    "passed": true,
+    "decode_tokens_per_second": 23.478369720091806
+  },
+  {
+    "content": "```python\ndef merge_intervals(intervals):\n    if not intervals:\n        return []\n    intervals = sorted(intervals, key=lambda x: x[0])\n    merged = [list(intervals[0])]\n    for start, end in intervals[1:]:\n        if start <= merged[-1][1]:\n            merged[-1][1] = max(merged[-1][1], end)\n        else:\n            merged.append([start, end])\n    return [tuple(iv) for iv in merged]\n\n\nassert merge_intervals([(1, 3), (2, 6), (8, 10), (15, 18)]) == [(1, 6), (8, 10), (15, 18)]\nassert merge_intervals([(1, 4), (4, 5)]) == [(1, 5)]\nassert merge_intervals([(5, 7), (1, 2)]) == [(1, 2), (5, 7)]\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 42,
+      "total_tokens": 243,
+      "completion_tokens": 201,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 4.4318946320563555,
+    "ttft_seconds": 0.4762817381415516,
+    "output_tokens_per_second": 45.35306379942927,
+    "corruption": false,
+    "repetition": false,
+    "name": "code-1",
+    "passed": true,
+    "decode_tokens_per_second": 50.561064837177064
+  },
+  {
+    "content": "In a distributed database, data is typically replicated across multiple nodes for availability and performance. When a client writes a value, the update may be committed on a primary node or a majority quorum, but replicas propagate changes asynchronously. If a subsequent read is routed to a replica that hasn't yet received the update, the client sees an older version of the data—a stale read. This is especially common in eventually consistent systems, leader-follower replication with lagging followers, or when clients connect to different datacenter replicas. Load balancers and connection pooling can make it worse by sending successive requests to different nodes.\n\nRead-your-writes consistency guarantees that once a client performs a write, any of its own subsequent reads will reflect that write (or a newer one). One common technique is session stickiness: pin a client's requests to the same node or replica for the duration of a session, so reads go to the node that handled the writes. Another approach is version or timestamp tracking: the database returns a version token with each write, and the client includes it in later reads; if a replica hasn't caught up to that version, it either forwards the request to a node that has or blocks until it does.\n\nThe right choice depends on trade-offs. Sticky sessions can create hotspots and reduce load balancing, while version-based checks add latency when replicas lag. Systems like MongoDB (causal consistency sessions) and CockroachDB offer built-in support, letting applications opt into stronger consistency only where needed.",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 43,
+      "total_tokens": 344,
+      "completion_tokens": 301,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 12.516872429987416,
+    "ttft_seconds": 0.5190916529390961,
+    "output_tokens_per_second": 24.047540764166964,
+    "corruption": false,
+    "repetition": false,
+    "name": "prose-1",
+    "passed": true,
+    "decode_tokens_per_second": 25.00462423633362
+  },
+  {
+    "content": "```python\ndef merge_intervals(intervals):\n    if not intervals:\n        return []\n    intervals = sorted(intervals, key=lambda x: x[0])\n    merged = [list(intervals[0])]\n    for start, end in intervals[1:]:\n        if start <= merged[-1][1]:\n            merged[-1][1] = max(merged[-1][1], end)\n        else:\n            merged.append([start, end])\n    return [tuple(iv) for iv in merged]\n\n\nassert merge_intervals([(1, 3), (2, 6), (8, 10), (15, 18)]) == [(1, 6), (8, 10), (15, 18)]\nassert merge_intervals([(1, 4), (4, 5)]) == [(1, 5)]\nassert merge_intervals([(5, 7), (1, 2)]) == [(1, 2), (5, 7)]\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 42,
+      "total_tokens": 243,
+      "completion_tokens": 201,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 4.070084654958919,
+    "ttft_seconds": 0.46658266987651587,
+    "output_tokens_per_second": 49.38472219616002,
+    "corruption": false,
+    "repetition": false,
+    "name": "code-2",
+    "passed": true,
+    "decode_tokens_per_second": 55.50156509638401
+  },
+  {
+    "content": "In a distributed database, data is typically replicated across multiple nodes for availability and performance. When a client writes a value, that update must propagate to all replicas, often asynchronously. If the client (or another client) subsequently reads from a replica that hasn't yet received the update, it sees an older version of the data—a stale read. This can also happen with leader-follower replication when reads are served by lagging followers, or in systems with multi-region deployments where cross-region replication delay is significant. Load-balanced connections can make it worse by routing successive requests to different replicas with different lag.\n\nRead-your-writes (RYW) consistency guarantees that a client always sees its own prior writes, even if other clients' data may still be stale. The most common technique is session stickiness: route all of a client's reads and writes within a session to the same node (e.g., the leader), ensuring the client reads data that includes its own updates. Alternatively, the database can track version metadata: each write returns a timestamp or version token, and the client attaches it to subsequent reads. A replica receiving such a read checks whether it has caught up to that version; if not, it either waits, proxies the request to a caught-up replica, or returns an error.\n\nThe tradeoff is latency and availability: enforcing RYW may force reads to wait for replication lag to clear or restrict which replicas can serve them. Many systems make RYW opt-in per session, balancing consistency guarantees against performance.",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 43,
+      "total_tokens": 348,
+      "completion_tokens": 305,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 13.083995444932953,
+    "ttft_seconds": 0.5186391179449856,
+    "output_tokens_per_second": 23.310922209019687,
+    "corruption": false,
+    "repetition": false,
+    "name": "prose-2",
+    "passed": true,
+    "decode_tokens_per_second": 24.193504114727453
+  },
+  {
+    "content": "```python\ndef clamp_0(x, low, high):\n    return max(low, min(x, high))\n\nassert clamp_0(5, 0, 10) == 5\nassert clamp_0(-3, 0, 10) == 0\nassert clamp_0(15, 0, 10) == 10\nassert clamp_0(0, 0, 10) == 0\nassert clamp_0(10, 0, 10) == 10\nassert clamp_0(3.5, 1, 3) == 3\nassert clamp_0(-1.5, -2, 2) == -1.5\nassert clamp_0(7, 7, 7) == 7\nassert clamp_0(100, -10, 10) == 10\nassert clamp_0(-100, -10, 10) == -10\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 40,
+      "total_tokens": 242,
+      "completion_tokens": 202,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 12.62710139900446,
+    "ttft_seconds": 6.667048915056512,
+    "output_tokens_per_second": 15.997337284067902,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-code-0",
+    "passed": true,
+    "decode_tokens_per_second": 33.72453523544432
+  },
+  {
+    "content": "```python\ndef clamp_1(x, low, high):\n    return max(low, min(x, high))\n\nassert clamp_1(5, 0, 10) == 5\nassert clamp_1(-3, 0, 10) == 0\nassert clamp_1(15, 0, 10) == 10\nassert clamp_1(0, 0, 10) == 0\nassert clamp_1(10, 0, 10) == 10\nassert clamp_1(3.7, 1, 3) == 3\nassert clamp_1(-5, -10, -1) == -5\nassert clamp_1(2, 2, 2) == 2\nassert clamp_1(0.5, 0, 1) == 0.5\nassert clamp_1(100, -100, 100) == 100\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 40,
+      "total_tokens": 242,
+      "completion_tokens": 202,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 12.259492503013462,
+    "ttft_seconds": 6.666724995011464,
+    "output_tokens_per_second": 16.477027899021685,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-code-1",
+    "passed": true,
+    "decode_tokens_per_second": 35.93927330474832
+  },
+  {
+    "content": "```python\ndef clamp_2(x, low, high):\n    \"\"\"Clamp x to the range [low, high].\"\"\"\n    return max(low, min(x, high))\n\n\nassert clamp_2(5, 0, 10) == 5\nassert clamp_2(-3, 0, 10) == 0\nassert clamp_2(15, 0, 10) == 10\nassert clamp_2(0, 0, 10) == 0\nassert clamp_2(10, 0, 10) == 10\nassert clamp_2(3.7, 1.0, 3.0) == 3.0\nassert clamp_2(-1.5, -2.0, 2.0) == -1.5\nassert clamp_2(7, 7, 7) == 7\nassert clamp_2(100, -50, 50) == 50\nassert clamp_2(-100, -50, 50) == -50\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 40,
+      "total_tokens": 266,
+      "completion_tokens": 226,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 13.856241818983108,
+    "ttft_seconds": 6.6666733948513865,
+    "output_tokens_per_second": 16.310338903755206,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-code-2",
+    "passed": true,
+    "decode_tokens_per_second": 31.295341629240156
+  },
+  {
+    "content": "```python\ndef clamp_3(x, low, high):\n    if x < low:\n        return low\n    if x > high:\n        return high\n    return x\n\nassert clamp_3(5, 0, 10) == 5\nassert clamp_3(-3, 0, 10) == 0\nassert clamp_3(15, 0, 10) == 10\nassert clamp_3(0, 0, 10) == 0\nassert clamp_3(10, 0, 10) == 10\nassert clamp_3(3.7, 1, 3) == 3\nassert clamp_3(1.2, 1, 3) == 1.2\nassert clamp_3(-5, -10, -1) == -5\nassert clamp_3(-20, -10, -1) == -10\nassert clamp_3(7, 7, 7) == 7\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 40,
+      "total_tokens": 256,
+      "completion_tokens": 216,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 13.487891274970025,
+    "ttft_seconds": 6.665925171924755,
+    "output_tokens_per_second": 16.0143639651692,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-code-3",
+    "passed": true,
+    "decode_tokens_per_second": 31.515841144978097
+  },
+  {
+    "name": "aggregate-c4",
+    "seconds": 13.869332985952497,
+    "output_tokens_per_second": 60.99788654990604,
+    "passed": true
+  },
+  {
+    "content": "{\"begin\": \"AMBER-7319\", \"middle\": \"COBALT-4826\", \"end\": \"JADE-9053\"}",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 256572,
+      "total_tokens": 256608,
+      "completion_tokens": 36,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 131.14658397086896,
+    "ttft_seconds": 130.54658438288607,
+    "output_tokens_per_second": 0.27450200310209016,
+    "corruption": false,
+    "repetition": false,
+    "name": "near-256k-retrieval",
+    "passed": true,
+    "decode_tokens_per_second": 58.33337339057958
+  },
+  {
+    "name": "automatic-tool-call",
+    "reply": {
+      "id": "chatcmpl-af390b32537b1904",
+      "object": "chat.completion",
+      "created": 1789109522,
+      "model": "GLM-5.3-Flash-FP8-TP4",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": null,
+            "refusal": null,
+            "annotations": null,
+            "audio": null,
+            "function_call": null,
+            "tool_calls": [
+              {
+                "id": "chatcmpl-tool-ab07452859178d11",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ],
+            "reasoning": null
+          },
+          "logprobs": null,
+          "finish_reason": "tool_calls",
+          "stop_reason": 154829,
+          "token_ids": null,
+          "routed_experts": null
+        }
+      ],
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.28.1rc1.dev580+g385dce36b-tp4-ep-a6228847",
+      "usage": {
+        "prompt_tokens": 166,
+        "total_tokens": 178,
+        "completion_tokens": 12,
+        "prompt_tokens_details": null,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "prompt_logprobs": null,
+      "prompt_token_ids": null,
+      "prompt_text": null,
+      "kv_transfer_params": null,
+      "ec_transfer_params": null,
+      "metrics": null
+    },
+    "passed": true
+  }
+]

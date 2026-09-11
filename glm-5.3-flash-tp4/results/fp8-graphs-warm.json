@@ -1,0 +1,284 @@
+[
+  {
+    "content": "```python\ndef merge_intervals(intervals):\n    if not intervals:\n        return []\n    intervals = sorted(intervals, key=lambda x: x[0])\n    merged = [list(intervals[0])]\n    for start, end in intervals[1:]:\n        if start <= merged[-1][1]:\n            merged[-1][1] = max(merged[-1][1], end)\n        else:\n            merged.append([start, end])\n    return [tuple(iv) for iv in merged]\n\n\nassert merge_intervals([(1, 3), (2, 6), (8, 10), (15, 18)]) == [(1, 6), (8, 10), (15, 18)]\nassert merge_intervals([(1, 4), (4, 5)]) == [(1, 5)]\nassert merge_intervals([(5, 7), (1, 2)]) == [(1, 2), (5, 7)]\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 42,
+      "total_tokens": 243,
+      "completion_tokens": 201,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 4.0542371610645205,
+    "ttft_seconds": 0.43402721104212105,
+    "output_tokens_per_second": 49.57776075122933,
+    "corruption": false,
+    "repetition": false,
+    "name": "code-0",
+    "passed": true,
+    "decode_tokens_per_second": 55.24541470274743
+  },
+  {
+    "content": "In a distributed database, data is typically replicated across multiple nodes for availability and performance. When a client writes a value, that update must propagate to all replicas, often asynchronously. If the client (or another client) subsequently reads from a replica that hasn't yet received the update, it sees an older version of the data—a stale read. This happens because replicas lag behind the primary, network delays delay replication, or load balancers route requests to different servers. The stronger the consistency guarantees, the more coordination and latency required, so many systems trade consistency for speed.\n\nRead-your-writes consistency guarantees that a client always sees its own prior writes, even if other clients might briefly see stale data. The simplest way to achieve it is session pinning: route all of a given user's requests to the same replica that handled their writes, or to the primary. Alternatively, the client can track a timestamp or version number returned with each write and pass it with subsequent reads; the replica then checks whether it has caught up to that version, waiting or redirecting to the primary if it hasn't.\n\nPractical implementations include sticky sessions at the load balancer, monotonic reads within a session, and techniques like Cassandra's read repair or quorum reads (reading from enough replicas to guarantee the latest write is included). The tradeoff is added latency or reduced availability, which is why many applications apply read-your-writes selectively—only for critical operations like viewing a just-submitted order.",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 43,
+      "total_tokens": 341,
+      "completion_tokens": 298,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 13.348866936052218,
+    "ttft_seconds": 0.5154995091725141,
+    "output_tokens_per_second": 22.32399209817356,
+    "corruption": false,
+    "repetition": false,
+    "name": "prose-0",
+    "passed": true,
+    "decode_tokens_per_second": 23.14279566078101
+  },
+  {
+    "content": "```python\ndef merge_intervals(intervals):\n    if not intervals:\n        return []\n    intervals = sorted(intervals, key=lambda x: x[0])\n    merged = [list(intervals[0])]\n    for start, end in intervals[1:]:\n        if start <= merged[-1][1]:\n            merged[-1][1] = max(merged[-1][1], end)\n        else:\n            merged.append([start, end])\n    return [tuple(iv) for iv in merged]\n\n\nassert merge_intervals([(1, 3), (2, 6), (8, 10), (15, 18)]) == [(1, 6), (8, 10), (15, 18)]\nassert merge_intervals([(1, 4), (4, 5)]) == [(1, 5)]\nassert merge_intervals([(5, 7), (1, 2)]) == [(1, 2), (5, 7)]\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 42,
+      "total_tokens": 243,
+      "completion_tokens": 201,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 4.16166140511632,
+    "ttft_seconds": 0.5453596101142466,
+    "output_tokens_per_second": 48.29801861172365,
+    "corruption": false,
+    "repetition": false,
+    "name": "code-1",
+    "passed": true,
+    "decode_tokens_per_second": 55.305118692364374
+  },
+  {
+    "content": "In a distributed database, data is typically replicated across multiple nodes for availability and performance. When a client writes a value, that update must propagate to all replicas, often asynchronously. If the client (or another client) subsequently reads from a replica that hasn't yet received the update, it sees an older version of the data—a stale read. This is especially common in leaderless or multi-leader systems, or when load balancers route successive requests to different replicas. The fundamental tension is between latency and consistency: waiting for all replicas to acknowledge writes before confirming them (synchronous replication) is slow and reduces availability, while asynchronous replication is fast but leaves windows where replicas diverge.\n\nRead-your-writes consistency guarantees that a client always sees its own prior writes, even if other clients' data may still be stale. There are several ways to achieve it. One approach is for the client to remember the timestamp or version of its last write and only read from replicas that have caught up to that point; if a replica lags, the client retries elsewhere or waits. Another is to route all of a given user's reads and writes to the same replica (session affinity or sticky sessions), ensuring ordering. Systems can also use quorum reads and writes: if writes require acknowledgment from W replicas and reads consult R replicas, choosing W + R > N guarantees overlap, so a read touches at least one replica with the latest write.\n\nIn practice, many databases expose these mechanisms as tunable options—e.g., causal consistency modes, monotonic reads, or read-repair—letting applications opt into stronger guarantees only where needed, balancing consistency against latency and availability.",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 43,
+      "total_tokens": 377,
+      "completion_tokens": 334,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 14.75238225585781,
+    "ttft_seconds": 0.5178369439672679,
+    "output_tokens_per_second": 22.640411169347022,
+    "corruption": false,
+    "repetition": false,
+    "name": "prose-1",
+    "passed": true,
+    "decode_tokens_per_second": 23.393792545086434
+  },
+  {
+    "content": "```python\ndef merge_intervals(intervals):\n    if not intervals:\n        return []\n    intervals = sorted(intervals)\n    merged = [list(intervals[0])]\n    for start, end in intervals[1:]:\n        if start <= merged[-1][1]:\n            merged[-1][1] = max(merged[-1][1], end)\n        else:\n            merged.append([start, end])\n    return [tuple(iv) for iv in merged]\n\n\nassert merge_intervals([(1, 3), (2, 6), (8, 10), (15, 18)]) == [(1, 6), (8, 10), (15, 18)]\nassert merge_intervals([(1, 4), (4, 5)]) == [(1, 5)]\nassert merge_intervals([(5, 7), (1, 2)]) == [(1, 2), (5, 7)]\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 42,
+      "total_tokens": 235,
+      "completion_tokens": 193,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 3.8653303391765803,
+    "ttft_seconds": 0.4751028879545629,
+    "output_tokens_per_second": 49.931049370831836,
+    "corruption": false,
+    "repetition": false,
+    "name": "code-2",
+    "passed": true,
+    "decode_tokens_per_second": 56.633368339576464
+  },
+  {
+    "content": "In a distributed database, data is typically replicated across multiple nodes for availability and performance. When a client writes a value, that update must propagate to all replicas, often asynchronously. If the client (or another client) subsequently reads from a replica that hasn't yet received the update, it sees an older version of the data—a stale read. This is especially common in leaderless or multi-leader replication systems, where reads may be served by any node, and during network partitions or replica lag, when replication delays can stretch from milliseconds to seconds or more.\n\nRead-your-writes consistency guarantees that a client always sees its own prior writes, even if other clients' data may still be stale. One common technique is for the database to track a per-client version counter or timestamp that advances with each write. When the client reads, it sends this version along, and the replica either waits until it has caught up to that version or redirects the request to a replica that has. Systems like Dynamo-style stores implement this by having the coordinator ensure the requested version is available before responding.\n\nAlternatively, clients can pin their reads to the node that handled their writes (e.g., the leader), or use session affinity so all of a user's requests route through the same replica. The tradeoff is availability and latency: guaranteeing fresh reads may require waiting or failing when the appropriate replica is unreachable.",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 43,
+      "total_tokens": 321,
+      "completion_tokens": 278,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 12.936200938886032,
+    "ttft_seconds": 0.5189484627917409,
+    "output_tokens_per_second": 21.49008053549447,
+    "corruption": false,
+    "repetition": false,
+    "name": "prose-2",
+    "passed": true,
+    "decode_tokens_per_second": 22.30767237223216
+  },
+  {
+    "content": "```python\ndef clamp_0(x, low, high):\n    return max(low, min(x, high))\n\nassert clamp_0(5, 0, 10) == 5\nassert clamp_0(-3, 0, 10) == 0\nassert clamp_0(15, 0, 10) == 10\nassert clamp_0(0, 0, 10) == 0\nassert clamp_0(10, 0, 10) == 10\nassert clamp_0(3.5, 1, 3) == 3\nassert clamp_0(-1.5, -2, 2) == -1.5\nassert clamp_0(7, 7, 7) == 7\nassert clamp_0(100, -10, 10) == 10\nassert clamp_0(-100, -10, 10) == -10\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 40,
+      "total_tokens": 242,
+      "completion_tokens": 202,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 6.6318548650015146,
+    "ttft_seconds": 0.5611225739121437,
+    "output_tokens_per_second": 30.459050161972122,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-code-0",
+    "passed": true,
+    "decode_tokens_per_second": 33.10967941956987
+  },
+  {
+    "content": "```python\ndef clamp_1(x, low, high):\n    return max(low, min(x, high))\n\nassert clamp_1(5, 0, 10) == 5\nassert clamp_1(-3, 0, 10) == 0\nassert clamp_1(15, 0, 10) == 10\nassert clamp_1(0, 0, 10) == 0\nassert clamp_1(10, 0, 10) == 10\nassert clamp_1(3.5, 1, 2) == 2\nassert clamp_1(-1.5, -2, 2) == -1.5\nassert clamp_1(7, 7, 7) == 7\nassert clamp_1(100, -100, 100) == 100\nassert clamp_1(0.1, 0.5, 1.0) == 0.5\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 40,
+      "total_tokens": 250,
+      "completion_tokens": 210,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 7.524914326146245,
+    "ttft_seconds": 0.5596138711553067,
+    "output_tokens_per_second": 27.907294475144926,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-code-1",
+    "passed": true,
+    "decode_tokens_per_second": 30.00588436213724
+  },
+  {
+    "content": "```python\ndef clamp_2(x, low, high):\n    \"\"\"Return x clamped to the range [low, high].\"\"\"\n    return max(low, min(x, high))\n\n\nassert clamp_2(5, 0, 10) == 5\nassert clamp_2(-3, 0, 10) == 0\nassert clamp_2(15, 0, 10) == 10\nassert clamp_2(0, 0, 10) == 0\nassert clamp_2(10, 0, 10) == 10\nassert clamp_2(3.7, 1.0, 3.0) == 3.0\nassert clamp_2(-1.5, -2.0, 2.0) == -1.5\nassert clamp_2(7, 7, 7) == 7\nassert clamp_2(100, -100, 100) == 100\nassert clamp_2(0, 5, 10) == 5\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 40,
+      "total_tokens": 267,
+      "completion_tokens": 227,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 8.307156864088029,
+    "ttft_seconds": 0.560073102125898,
+    "output_tokens_per_second": 27.325835266374302,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-code-2",
+    "passed": true,
+    "decode_tokens_per_second": 29.172267519508555
+  },
+  {
+    "content": "```python\ndef clamp_3(x, low, high):\n    \"\"\"Return x clamped to the range [low, high].\"\"\"\n    if low > high:\n        raise ValueError(\"low must be <= high\")\n    return max(low, min(x, high))\n\n\nassert clamp_3(5, 0, 10) == 5\nassert clamp_3(-3, 0, 10) == 0\nassert clamp_3(15, 0, 10) == 10\nassert clamp_3(0, 0, 10) == 0\nassert clamp_3(10, 0, 10) == 10\nassert clamp_3(2.5, 1, 2) == 2\nassert clamp_3(-1.5, -2, 2) == -1.5\nassert clamp_3(7, 7, 7) == 7\nassert clamp_3(0, -5, 5) == 0\nassert clamp_3(100, 1, 3) == 3\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 40,
+      "total_tokens": 273,
+      "completion_tokens": 233,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 8.154210207983851,
+    "ttft_seconds": 0.5595677429810166,
+    "output_tokens_per_second": 28.57419591315758,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-code-3",
+    "passed": true,
+    "decode_tokens_per_second": 30.54785015477531
+  },
+  {
+    "name": "aggregate-c4",
+    "seconds": 8.311782878125086,
+    "output_tokens_per_second": 104.91130636904938,
+    "passed": true
+  },
+  {
+    "name": "automatic-tool-call",
+    "reply": {
+      "id": "chatcmpl-bbd3521e7b9ce445",
+      "object": "chat.completion",
+      "created": 1789109718,
+      "model": "GLM-5.3-Flash-FP8-TP4",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": null,
+            "refusal": null,
+            "annotations": null,
+            "audio": null,
+            "function_call": null,
+            "tool_calls": [
+              {
+                "id": "chatcmpl-tool-ae6a4b3d25766f35",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ],
+            "reasoning": null
+          },
+          "logprobs": null,
+          "finish_reason": "tool_calls",
+          "stop_reason": 154829,
+          "token_ids": null,
+          "routed_experts": null
+        }
+      ],
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.28.1rc1.dev580+g385dce36b-tp4-ep-a6228847",
+      "usage": {
+        "prompt_tokens": 166,
+        "total_tokens": 178,
+        "completion_tokens": 12,
+        "prompt_tokens_details": null,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "prompt_logprobs": null,
+      "prompt_token_ids": null,
+      "prompt_text": null,
+      "kv_transfer_params": null,
+      "ec_transfer_params": null,
+      "metrics": null
+    },
+    "passed": true
+  }
+]
