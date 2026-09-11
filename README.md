@@ -1,7 +1,7 @@
-# SparkRun recipes for dual DGX Sparks
+# SparkRun recipes for DGX Spark clusters
 
-Curated, tested recipes for serving large models across a pair of NVIDIA DGX
-Sparks. Each model directory contains its own recipe, build files when needed,
+Recipes for serving large models across two or four NVIDIA DGX
+Sparks. Each model directory documents its validation, build files when needed,
 usage instructions, license, and upstream notices.
 
 ## Recipes
@@ -11,6 +11,7 @@ usage instructions, license, and upstream notices.
 | DeepSeek V4 Flash 0731 | TP2, FP8 KV, DSpark speculative decoding, 1M context | [`deepseek-v4-flash-0731/`](deepseek-v4-flash-0731/) |
 | GLM-5.3-Flash EXL3 | EXL3/TR3 4 bpw, TP2, DFlash2, FP8 KV, 196K context | [`glm-5.3-flash-exl3/`](glm-5.3-flash-exl3/) |
 | GLM-5.3-Flash NVFP4 | NVIDIA NVFP4, TP2 + expert parallelism, native NoPE attention, FP8 KV, 32K context | [`glm-5.3-flash-nvfp4/`](glm-5.3-flash-nvfp4/) |
+| GLM-5.3-Flash TP4 | Separate NVIDIA NVFP4 / native Z.ai FP8 weight profiles, DFlash2, FP8 KV, 256K context | [`glm-5.3-flash-tp4/`](glm-5.3-flash-tp4/) |
 | Qwen3.8-Flash-Next FP8 | Original Qwen FP8 quant, TP2, MTP3, 262K context | [`qwen3.8-flash-next/`](qwen3.8-flash-next/) |
 | Qwen3.8-Flash-Next NVFP4 + MTP | NVIDIA NVFP4, TP2 + expert parallelism, MTP3, 262K context | [`qwen3.8-flash-next-nvfp4-mtp/`](qwen3.8-flash-next-nvfp4-mtp/) |
 
