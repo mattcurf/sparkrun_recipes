@@ -48,6 +48,40 @@ rows on each node. It verifies 8,008 sampled weight and scale rows per rank
 byte-for-byte. If a local copy is absent or does not cover the rank's rows, the
 runtime safely reads those Engram rows from the shared checkpoint instead.
 
+### Download locations and cleanup
+
+`setup-model.sh` downloads the approximately 510 GB checkpoint into its first
+argument. In the example above that is
+`/srv/sparkrun/models/DeepSeek-V4.1-Flash`. It also creates approximately 48 GB
+of allocated sparse Engram data on each rank host at
+`$HOME/.local/share/sparkrun/engram/DeepSeek-V4.1-Flash` (approximately 190 GB
+apparent size). The `/srv/sparkrun/engram/DeepSeek-V4.1-Flash` path on each host
+is only a symlink to that user's Engram directory, not another copy.
+
+Stop the recipe before deleting its files. To remove the rank-local Engram data,
+run the following on **each** rank host as the same SSH user used by SparkRun:
+
+```bash
+docker run --rm --entrypoint sh \
+  -v /srv:/host-srv deepseek-v4.1-flash-sparkrun-v1 \
+  -c 'rm -f /host-srv/sparkrun/engram/DeepSeek-V4.1-Flash'
+rm -rf -- "$HOME/.local/share/sparkrun/engram/DeepSeek-V4.1-Flash"
+```
+
+Delete the shared checkpoint only after confirming that no other recipe uses
+it. Run this once against the same shared path passed to `setup-model.sh`:
+
+```bash
+SHARED_MODEL_DIR=/srv/sparkrun/models/DeepSeek-V4.1-Flash
+rm -rf -- "$SHARED_MODEL_DIR"
+```
+
+The build checkout defaults to
+`${XDG_CACHE_HOME:-$HOME/.cache}/sparkrun-build/deepseek-v4.1-flash`; it can be
+removed after the image is built. Docker images are managed separately with
+`docker image rm deepseek-v4.1-flash-sparkrun-v1` on hosts where they are no
+longer needed.
+
 ## Build and run
 
 Build on a node with at least 80 GB free before running the storage setup above,
