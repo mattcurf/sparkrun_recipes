@@ -4,6 +4,7 @@ model: zai-org/GLM-5.3-Flash
 model_revision: eb9eb208eb0d988989d07a6a12d0fdeb5f52574a
 runtime: vllm-distributed
 # Shared native NoPE and DFlash2 integration; no weight conversion.
+# Built by ../glm-5.3-flash-nvfp4-2node/build-image.sh.
 container: glm53-flash-nvfp4-sparkrun-v2
 min_nodes: 4
 max_nodes: 4

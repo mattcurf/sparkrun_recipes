@@ -15,7 +15,7 @@ import urllib.request
 from pathlib import Path
 
 REQUEST = runpy.run_path(
-    str(Path(__file__).resolve().parents[1] / "glm-5.3-flash-nvfp4/benchmark.py")
+    str(Path(__file__).resolve().parents[1] / "glm-5.3-flash-nvfp4-2node/benchmark.py")
 )["request"]
 
 

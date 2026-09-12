@@ -1,7 +1,9 @@
-# GLM-5.3-Flash on four DGX Sparks
+# GLM-5.3-Flash NVFP4 on four DGX Sparks
 
-Separate TP4 recipes comparing **model-weight quantization**, not KV-cache
-formats. Existing two-node recipes are unchanged. Both profiles have a
+This directory contains the NVIDIA NVFP4 recipe and shared TP4 evaluation tools
+and receipts. The [native FP8 recipe](../glm-5.3-flash-fp8-4node/) lives in its own
+directory. The comparison concerns **model-weight quantization**, not KV-cache
+formats. Both profiles have a
 **262,144-token (256K) total context window**, including prompt and output.
 
 **Both profiles tested on four Sparks, 2026-09-11. NVIDIA NVFP4 is recommended.**
@@ -11,8 +13,8 @@ that required its smaller pool.
 
 | Profile | Weights | MoE computation |
 | --- | --- | --- |
-| `glm-5.3-flash-nvfp4-tp4.yaml` | `nvidia/GLM-5.3-Flash-NVFP4` | Calibrated CUTLASS W4A4 |
-| `glm-5.3-flash-fp8-tp4.yaml` | `zai-org/GLM-5.3-Flash` | Native block-scaled Triton W8A8 |
+| [NVFP4](glm-5.3-flash-nvfp4-tp4.yaml) | `nvidia/GLM-5.3-Flash-NVFP4` | Calibrated CUTLASS W4A4 |
+| [FP8](../glm-5.3-flash-fp8-4node/glm-5.3-flash-fp8-tp4.yaml) | `zai-org/GLM-5.3-Flash` | Native block-scaled Triton W8A8 |
 
 Both retain TP4 plus expert parallelism, allgather/reduce-scatter, native NoPE
 sparse attention, FP8 target KV, BF16 draft KV, DFlash2 with seven speculative
@@ -37,13 +39,13 @@ The recipes reuse the pinned runtime integration from the sibling NVIDIA
 directory instead of duplicating its patches. Run from the repository root:
 
 ```bash
-./glm-5.3-flash-nvfp4/build-image.sh
-sparkrun recipe validate glm-5.3-flash-tp4/glm-5.3-flash-nvfp4-tp4.yaml
-sparkrun run glm-5.3-flash-tp4/glm-5.3-flash-nvfp4-tp4.yaml --cluster <four-node-cluster>
+./glm-5.3-flash-nvfp4-2node/build-image.sh
+sparkrun recipe validate glm-5.3-flash-nvfp4-4node/glm-5.3-flash-nvfp4-tp4.yaml
+sparkrun run glm-5.3-flash-nvfp4-4node/glm-5.3-flash-nvfp4-tp4.yaml --cluster <four-node-cluster>
 
 # Alternative weights; stop the previous job before starting this profile.
-sparkrun recipe validate glm-5.3-flash-tp4/glm-5.3-flash-fp8-tp4.yaml
-sparkrun run glm-5.3-flash-tp4/glm-5.3-flash-fp8-tp4.yaml --cluster <four-node-cluster>
+sparkrun recipe validate glm-5.3-flash-fp8-4node/glm-5.3-flash-fp8-tp4.yaml
+sparkrun run glm-5.3-flash-fp8-4node/glm-5.3-flash-fp8-tp4.yaml --cluster <four-node-cluster>
 ```
 
 Stop conflicting workloads only with the operator's approval. The development
@@ -69,16 +71,16 @@ and the output filenames between weight variants:
 
 ```bash
 MODEL=GLM-5.3-Flash-NVFP4-TP4
-python3 glm-5.3-flash-nvfp4/benchmark.py --model "$MODEL" \
+python3 glm-5.3-flash-nvfp4-2node/benchmark.py --model "$MODEL" \
   --reasoning low --long-context --quality-stress --output /tmp/quality.json
-python3 glm-5.3-flash-tp4/evaluate.py --model "$MODEL" \
+python3 glm-5.3-flash-nvfp4-4node/evaluate.py --model "$MODEL" \
   --near-limit --output /tmp/evaluation.json
 # A long decode near the 256K limit, in addition to retrieval:
-python3 glm-5.3-flash-nvfp4/benchmark.py --model "$MODEL" \
+python3 glm-5.3-flash-nvfp4-2node/benchmark.py --model "$MODEL" \
   --reasoning low --rounds 0 --long-context --context-lines 17100 \
   --long-concurrency 0 --request-timeout 1800 --output /tmp/256k-decode.json
 # Repeat the short evaluation after shapes are warm; use this for warm rates.
-python3 glm-5.3-flash-tp4/evaluate.py --model "$MODEL" --output /tmp/warm.json
+python3 glm-5.3-flash-nvfp4-4node/evaluate.py --model "$MODEL" --output /tmp/warm.json
 ```
 
 The evaluation records full replies, API token counts, TTFT, total request
@@ -96,9 +98,9 @@ does not automatically imply better quality or speed on these workloads.
 CPU-only checks (PyYAML required):
 
 ```bash
-python3 -m unittest discover -s glm-5.3-flash-tp4 -v
-uvx ruff check glm-5.3-flash-tp4/*.py
-uvx ruff format --check glm-5.3-flash-tp4/*.py
+python3 -m unittest discover -s glm-5.3-flash-nvfp4-4node -v
+uvx ruff check glm-5.3-flash-nvfp4-4node/*.py
+uvx ruff format --check glm-5.3-flash-nvfp4-4node/*.py
 ```
 
 ## License and references
@@ -106,7 +108,7 @@ uvx ruff format --check glm-5.3-flash-tp4/*.py
 Original configurations, evaluation code, and documentation use the
 [Unlicense](LICENSE). Downloaded weights and container components keep their
 own licenses. The shared runtime's Apache-2.0 adaptations and upstream notices
-are in [the sibling directory](../glm-5.3-flash-nvfp4/THIRD_PARTY_NOTICES.md).
+are in [the sibling directory](../glm-5.3-flash-nvfp4-2node/THIRD_PARTY_NOTICES.md).
 No weights or images are distributed in this repository.
 
 Reference deployments informing the experiment (not measurements of our rig):

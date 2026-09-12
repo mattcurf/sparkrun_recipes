@@ -6,14 +6,25 @@ usage instructions, license, and upstream notices.
 
 ## Recipes
 
+Folders follow `<model>-<weight-quant>-<N>node`, where quantization describes
+the model checkpoint, not the KV cache or runtime kernel format. Each folder
+contains one recipe. Speculative decoding methods remain in the configuration
+description rather than the folder name. Recipe filenames, served API names,
+container tags, and checkpoint revisions are unchanged.
+
 | Model | Configuration | Directory |
 | --- | --- | --- |
-| DeepSeek V4 Flash 0731 | TP2, FP8 KV, DSpark speculative decoding, 1M context | [`deepseek-v4-flash-0731/`](deepseek-v4-flash-0731/) |
-| GLM-5.3-Flash EXL3 | EXL3/TR3 4 bpw, TP2, DFlash2, FP8 KV, 196K context | [`glm-5.3-flash-exl3/`](glm-5.3-flash-exl3/) |
-| GLM-5.3-Flash NVFP4 | NVIDIA NVFP4, TP2 + expert parallelism, native NoPE attention, FP8 KV, 32K context | [`glm-5.3-flash-nvfp4/`](glm-5.3-flash-nvfp4/) |
-| GLM-5.3-Flash TP4 | Separate NVIDIA NVFP4 / native Z.ai FP8 weight profiles, DFlash2, FP8 KV, 256K context | [`glm-5.3-flash-tp4/`](glm-5.3-flash-tp4/) |
-| Qwen3.8-Flash-Next FP8 | Original Qwen FP8 quant, TP2, MTP3, 262K context | [`qwen3.8-flash-next/`](qwen3.8-flash-next/) |
-| Qwen3.8-Flash-Next NVFP4 + MTP | NVIDIA NVFP4, TP2 + expert parallelism, MTP3, 262K context | [`qwen3.8-flash-next-nvfp4-mtp/`](qwen3.8-flash-next-nvfp4-mtp/) |
+| DeepSeek V4 Flash 0731 | FP8 weights, TP2, DSpark speculative decoding, 1M context | [`deepseek-v4-flash-0731-fp8-2node/`](deepseek-v4-flash-0731-fp8-2node/) |
+| GLM-5.3-Flash EXL3 | EXL3/TR3 4 bpw, TP2, DFlash2, FP8 KV, 192K context | [`glm-5.3-flash-exl3-2node/`](glm-5.3-flash-exl3-2node/) |
+| GLM-5.3-Flash NVFP4 | NVIDIA NVFP4, TP2 + expert parallelism, DFlash2, FP8 KV, 192K context | [`glm-5.3-flash-nvfp4-2node/`](glm-5.3-flash-nvfp4-2node/) |
+| GLM-5.3-Flash NVFP4 | NVIDIA NVFP4, TP4 + expert parallelism, DFlash2, FP8 KV, 256K context | [`glm-5.3-flash-nvfp4-4node/`](glm-5.3-flash-nvfp4-4node/) |
+| GLM-5.3-Flash FP8 | Native Z.ai FP8, TP4 + expert parallelism, DFlash2, FP8 KV, 256K context | [`glm-5.3-flash-fp8-4node/`](glm-5.3-flash-fp8-4node/) |
+| Qwen3.8-Flash-Next FP8 | Original Qwen FP8, TP2, MTP3, 256K context | [`qwen3.8-flash-next-fp8-2node/`](qwen3.8-flash-next-fp8-2node/) |
+| Qwen3.8-Flash-Next NVFP4 | NVIDIA NVFP4, TP2 + expert parallelism, MTP3, 256K context | [`qwen3.8-flash-next-nvfp4-2node/`](qwen3.8-flash-next-nvfp4-2node/) |
+
+Update local scripts/bookmarks to these paths; old folders are not retained as
+aliases. Renaming files does not restart an existing workload. For a job launched
+under an old path, use `sparkrun status` and the reported job ID to manage it.
 
 ## Install SparkRun
 
@@ -38,6 +49,43 @@ sparkrun recipe validate <recipe.yaml>
 sparkrun run <recipe.yaml> --cluster <cluster-name>
 sparkrun status
 ```
+
+## CPU threading policy
+
+All GPU-serving recipes explicitly set `OMP_NUM_THREADS: "1"`. This is a
+conservative steady-state serving default, not a benchmark-proven optimum for
+every model on DGX Spark. Twenty CPU cores do not eliminate synchronization and
+spin-wait overhead from small parallel CPU operations in a GPU-serving loop.
+
+Current [vLLM thread management](https://github.com/vllm-project/vllm/blob/7635a9002baecca64909dbcf8b1d461d26fb879d/vllm/utils/torch_utils.py)
+reduces Torch CPU threads to one for serving when OMP is not externally set;
+an explicit setting prevents inherited container values from retaining larger
+thread pools. Older pinned images may manage threads differently. Explicitly
+setting one can also reduce CPU parallelism during model loading, increasing
+startup time compared with upstream's automatic startup/serving distinction.
+
+This does not limit GPU parallelism, request concurrency, or all tokenizer,
+networking, and BLAS thread pools. All current recipes use vLLM, including EXL3.
+No additional BLAS environment overrides are imposed by this policy.
+
+Use a different value only with a documented, controlled comparison on the
+pinned runtime, changing only thread settings while keeping prompts, warmup,
+cache behavior, concurrency, and model configuration fixed. The earlier TP2/TP4
+comparison changed several settings and is not evidence of an OpenMP optimum.
+Recipe changes take effect on the next launch; they do not alter running servers.
+
+## Repository checks
+
+With Python and PyYAML installed, run these non-deploying checks from the root:
+
+```bash
+python3 -m unittest discover -s tools -v
+python3 -m unittest discover -s glm-5.3-flash-nvfp4-4node -v
+for recipe in */*.yaml; do sparkrun recipe validate "$recipe" || exit; done
+```
+
+The layout checks cover one recipe per folder, model/quant/node naming, node
+counts, OpenMP policy, index context sizes, and relative Markdown link targets.
 
 ## Tools
 

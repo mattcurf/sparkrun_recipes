@@ -3,7 +3,7 @@ recipe_version: "2"
 model: nvidia/GLM-5.3-Flash-NVFP4
 model_revision: 423acf37583782c51c142d145aef733d72943d93
 runtime: vllm-distributed
-# Built by ../glm-5.3-flash-nvfp4/build-image.sh.
+# Built by ../glm-5.3-flash-nvfp4-2node/build-image.sh.
 container: glm53-flash-nvfp4-sparkrun-v2
 min_nodes: 4
 max_nodes: 4
