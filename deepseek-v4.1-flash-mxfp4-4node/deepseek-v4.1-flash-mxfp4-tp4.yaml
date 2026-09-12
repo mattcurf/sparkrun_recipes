@@ -7,6 +7,10 @@ container: deepseek-v4.1-flash-sparkrun-v1
 min_nodes: 4
 max_nodes: 4
 cluster_only: true
+cluster_config:
+  # Pre-place the checkpoint at this shared absolute path on all four hosts.
+  # Change this supported SparkRun launch override to match your storage.
+  resolved_model_path: /srv/sparkrun/models/DeepSeek-V4.1-Flash
 metadata:
   description: DeepSeek V4.1 Flash official MXFP4/MXFP8 checkpoint, TP4, disk-backed Engram, DSpark k5, 256K context
   model_vram: 326
@@ -24,8 +28,8 @@ executor_config:
   ulimit: [memlock=-1:-1]
   devices: [/dev/infiniband:/dev/infiniband]
   volumes:
-    - /home/matt/config/DeepSeek-V4.1-Flash:/models/DeepSeek-V4.1-Flash:ro
-    - /var/tmp/engram-local/DeepSeek-V4.1-Flash:/engram-local:ro
+    # Keep this host source in sync with LOCAL_ENGRAM_DIR passed to setup-model.sh.
+    - /var/lib/sparkrun/engram/DeepSeek-V4.1-Flash:/engram-local:ro
 distribution_config:
   externally_provided: true
   models:
@@ -75,7 +79,7 @@ env:
   NCCL_CUMEM_ENABLE: "0"
   NCCL_NVLS_ENABLE: "0"
 command: |
-  vllm serve /models/DeepSeek-V4.1-Flash \
+  vllm serve {resolved_model_path} \
     --served-model-name {served_model_name} \
     --host {host} --port {port} \
     --tensor-parallel-size {tensor_parallel} \

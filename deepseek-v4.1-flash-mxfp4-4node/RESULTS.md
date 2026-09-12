@@ -15,10 +15,11 @@ Thinking was disabled and sampling was greedy.
 - A 253,237-token prompt retrieved distinct keys placed at 1%, 50%, and 99%
   depth in order. TTFT was 166.7 s (1,519.4 prompt tok/s), followed by 320
   coherent output tokens.
-- Every rank loaded 81.58 GiB of model state. Ranks 1–3 read their disjoint
-  Engram rows from node-local storage; rank 0 used the documented shared-storage
-  fallback. The final launch reused the embedded FlashInfer sparse module and
-  persistent TileLang/autotune caches.
+- Every rank loaded 81.58 GiB of model state. Three ranks read their disjoint
+  Engram rows from node-local storage; the remaining rank read from the shared
+  checkpoint. This describes the measured deployment, not an all-local result.
+  The final launch reused the embedded FlashInfer sparse module and persistent
+  TileLang/autotune caches.
 
 The reference project's same-prompt end-to-end smoke reported 84.9 tok/s for
 counting and 65.3 tok/s for code. This deployment measured 83.1 and 63.2 tok/s,

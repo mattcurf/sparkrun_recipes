@@ -31,6 +31,34 @@ class DeepSeekV41RecipeTest(unittest.TestCase):
         self.assertIn("--reasoning-parser deepseek_v41", self.recipe["command"])
         self.assertIn("--block-size 128", self.recipe["command"])
 
+    def test_storage_paths_are_portable(self):
+        model_path = self.recipe["cluster_config"]["resolved_model_path"]
+        volumes = self.recipe["executor_config"]["volumes"]
+        tracked_text = "\n".join(
+            path.read_text()
+            for path in (
+                ROOT / "deepseek-v4.1-flash-mxfp4-tp4.yaml",
+                ROOT / "setup-model.sh",
+                ROOT / "engram_local.py",
+                ROOT / "README.md",
+                ROOT / "RESULTS.md",
+            )
+        )
+        self.assertEqual(model_path, "/srv/sparkrun/models/DeepSeek-V4.1-Flash")
+        self.assertIn("{resolved_model_path}", self.recipe["command"])
+        self.assertIn(
+            "/var/lib/sparkrun/engram/DeepSeek-V4.1-Flash:/engram-local:ro",
+            volumes,
+        )
+        self.assertNotIn("/home/", tracked_text)
+        self.assertNotIn("NFS", tracked_text)
+
+    def test_setup_stages_every_tensor_parallel_rank(self):
+        setup = (ROOT / "setup-model.sh").read_text()
+        self.assertIn("'1:0:96000564 14:0:96003054'", setup)
+        self.assertIn("for rank in 0 1 2 3", setup)
+        self.assertNotIn("if (( rank == 0 ))", setup)
+
     def test_pinned_patch_set(self):
         expected = {
             "attention.py": "da9ef19608848b6686c17300108610af",

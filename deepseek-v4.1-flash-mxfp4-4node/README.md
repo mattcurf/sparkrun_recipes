@@ -3,8 +3,8 @@
 Serves the official mixed MXFP4/MXFP8
 [`deepseek-ai/DeepSeek-V4.1-Flash`](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash)
 checkpoint on four DGX Sparks with TP4, DSpark k5, CUDA graphs, and a 262,144-token
-context window. The 203 GB Engram tables remain on disk; ranks 1–3 use verified
-rank-local sparse row copies while rank 0 may read Engram from shared storage.
+context window. The 203 GB Engram tables remain on disk; each rank can use a
+rank-local sparse row copy while retaining the shared checkpoint as a safe fallback.
 See [measured correctness, throughput, and tool-evaluation results](RESULTS.md).
 
 This is a SparkRun adaptation of
@@ -16,21 +16,27 @@ with these whole-file patches and have produced silently corrupted output.
 ## Storage setup
 
 The checkpoint is about 510 GB and is not copied to every rank. All four hosts
-must see the same read-only-capable path. The recipe uses
-`/home/matt/config/DeepSeek-V4.1-Flash`; change both volume and setup arguments
-if your shared storage lives elsewhere. Prepare it from a host with `hf`, then
-name the four nodes in SparkRun rank order:
+must see it at the same absolute, read-only-capable path. The recipe declares
+that path through SparkRun's supported `cluster_config.resolved_model_path`
+schema. Its example location is `/srv/sparkrun/models/DeepSeek-V4.1-Flash`;
+change that field when your shared model storage uses another path.
+
+The local Engram source in `executor_config.volumes` similarly defaults to
+`/var/lib/sparkrun/engram/DeepSeek-V4.1-Flash`. Keep it in sync with the second
+setup argument if you choose another local disk. Prepare both locations from a
+host with `hf`, then name the four nodes in SparkRun rank order:
 
 ```bash
-./setup-model.sh /home/matt/config/DeepSeek-V4.1-Flash \
+./setup-model.sh /srv/sparkrun/models/DeepSeek-V4.1-Flash \
+  /var/lib/sparkrun/engram/DeepSeek-V4.1-Flash \
   <rank-0> <rank-1> <rank-2> <rank-3>
 ```
 
 The script pins model revision `dba1be0a40aa45a94ad051997016db3960a90277`,
 checks the final shard, and creates approximately 48 GB of rank-local Engram
-rows on ranks 1–3 under `/var/tmp/engram-local/DeepSeek-V4.1-Flash`. It verifies
-8,008 sampled weight and scale rows per rank byte-for-byte. Rank 0 safely falls
-back to shared storage when its local metadata is absent.
+rows on each node. It verifies 8,008 sampled weight and scale rows per rank
+byte-for-byte. If a local copy is absent or does not cover the rank's rows, the
+runtime safely reads those Engram rows from the shared checkpoint instead.
 
 ## Build and run
 
@@ -67,10 +73,11 @@ Before throughput testing, verify all of the following against an idle endpoint:
    V4.1 tool objects and arguments.
 4. A prompt above 250,000 actual tokens retrieves distinct values from its
    beginning, middle, and end, then emits at least 256 coherent tokens.
-5. Every rank log reports its own Engram row range; ranks 1–3 report the local
-   `/engram-local` source. FlashInfer's sparse module must load from the image;
-   first launch may populate SparkRun's persistent TileLang shape cache, while
-   subsequent launches must reuse it.
+5. Every rank log reports its own Engram row range. Ranks with a prepared sparse
+   copy report the local `/engram-local` source; any fallback rank reports the
+   shared checkpoint. FlashInfer's sparse module must load from the image; first
+   launch may populate SparkRun's persistent TileLang shape cache, while a
+   subsequent launch must reuse it.
 
 The V4.1 protocol settings are not interchangeable with DeepSeek V4: the recipe
 uses the model-selected V4.1 tokenizer plus `deepseek_v41` reasoning and tool
@@ -90,7 +97,7 @@ uvx --from llama-benchy==0.4.0 llama-benchy \
   --base-url http://127.0.0.1:8000/v1 \
   --model deepseek-ai/DeepSeek-V4.1-Flash \
   --served-model-name deepseek-v4.1-flash-mxfp4-tp4 \
-  --tokenizer /home/matt/config/DeepSeek-V4.1-Flash \
+  --tokenizer /srv/sparkrun/models/DeepSeek-V4.1-Flash \
   --pp 2048 4096 8192 16384 --tg 256 --exact-tg \
   --depth 0 --runs 3 --concurrency 1 2 4 --no-cache \
   --save-result results/llama-benchy.json --format json \

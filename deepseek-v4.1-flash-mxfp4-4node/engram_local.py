@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Make a node-local sparse copy of this rank's Engram rows, for DSV41_ENGRAM_DIR.
 
-For each LAYER:START:END it copies, from the (NFS) model dir, the shard's safetensors header plus
+For each LAYER:START:END it copies, from the shared model dir, the shard's safetensors header plus
 rows [START, END) of layers.LAYER.engram.embed.weight and .scale, at the SAME byte offsets, into a
 sparse local file of the same name and size. Then it copies the index json, writes engram-local.json
 (row range per layer) and checks random rows byte for byte against the source.
