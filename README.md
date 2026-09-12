@@ -15,6 +15,7 @@ container tags, and checkpoint revisions are unchanged.
 | Model | Configuration | Directory |
 | --- | --- | --- |
 | DeepSeek V4 Flash 0731 | FP8 weights, TP2, DSpark speculative decoding, 1M context | [`deepseek-v4-flash-0731-fp8-2node/`](deepseek-v4-flash-0731-fp8-2node/) |
+| DeepSeek V4.1 Flash | Official MXFP4/MXFP8 weights, TP4, disk-backed Engram, DSpark, 256K context | [`deepseek-v4.1-flash-mxfp4-4node/`](deepseek-v4.1-flash-mxfp4-4node/) |
 | GLM-5.3-Flash EXL3 | EXL3/TR3 4 bpw, TP2, DFlash2, FP8 KV, 192K context | [`glm-5.3-flash-exl3-2node/`](glm-5.3-flash-exl3-2node/) |
 | GLM-5.3-Flash NVFP4 | NVIDIA NVFP4, TP2 + expert parallelism, DFlash2, FP8 KV, 192K context | [`glm-5.3-flash-nvfp4-2node/`](glm-5.3-flash-nvfp4-2node/) |
 | GLM-5.3-Flash NVFP4 | NVIDIA NVFP4, TP4 + expert parallelism, DFlash2, FP8 KV, 256K context | [`glm-5.3-flash-nvfp4-4node/`](glm-5.3-flash-nvfp4-4node/) |
@@ -83,6 +84,8 @@ has standalone attribution. Major upstream work includes:
   AGPL-3.0-or-later, whose NVIDIA-checkpoint and MTP investigations informed
   the Qwen integration.
 - [Tony Deangelo's DeepSeek V4 Flash DSpark project](https://github.com/tonyd2wild/DeepSeek-v4-Flash-0731-DSpark-1M-NVFP4-KV-2x-DGX-Spark),
+  MIT with Apache-2.0-derived runtime components.
+- [Tony Deangelo's DeepSeek V4.1 Flash TP4 project](https://github.com/tonyd2wild/DeepSeek-V4.1-Flash-vLLM-DGX-Spark),
   MIT with Apache-2.0-derived runtime components.
 
 No model weights or third-party container images are distributed here.

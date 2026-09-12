@@ -1,0 +1,95 @@
+# SPDX-License-Identifier: Unlicense
+recipe_version: "2"
+model: deepseek-ai/DeepSeek-V4.1-Flash
+model_revision: dba1be0a40aa45a94ad051997016db3960a90277
+runtime: vllm-distributed
+container: deepseek-v4.1-flash-sparkrun-v1
+min_nodes: 4
+max_nodes: 4
+cluster_only: true
+metadata:
+  description: DeepSeek V4.1 Flash official MXFP4/MXFP8 checkpoint, TP4, disk-backed Engram, DSpark k5, 256K context
+  model_vram: 326
+  quantization: mxfp4
+  quant_bits: 4
+  model_type: deepseek_v4_1
+mods:
+  - use-official-vllm
+executor_config:
+  entrypoint: ""
+  user: root
+  shm_size: 32gb
+  memory_limit: 112g
+  cap_add: [IPC_LOCK]
+  ulimit: [memlock=-1:-1]
+  devices: [/dev/infiniband:/dev/infiniband]
+  volumes:
+    - /home/matt/config/DeepSeek-V4.1-Flash:/models/DeepSeek-V4.1-Flash:ro
+    - /var/tmp/engram-local/DeepSeek-V4.1-Flash:/engram-local:ro
+distribution_config:
+  externally_provided: true
+  models:
+    enabled: false
+    entries: []
+  containers:
+    entries:
+      - name: deepseek-v4.1-flash-sparkrun-v1
+        target: [-1]
+defaults:
+  host: 0.0.0.0
+  port: 8000
+  served_model_name: deepseek-v4.1-flash-mxfp4-tp4
+  tensor_parallel: 4
+  gpu_memory_utilization: 0.80
+  max_model_len: 262144
+  max_num_seqs: 8
+  max_num_batched_tokens: 8192
+  speculative_config: '{"method":"dspark","num_speculative_tokens":5,"draft_sample_method":"probabilistic","rejection_sample_method":"block","enable_adaptive_verification":false}'
+  compilation_config: '{"cudagraph_mode":"FULL_AND_PIECEWISE","cudagraph_capture_sizes":[5,6,10,12,15,18,20,24,25,30,35,36,40,42,48]}'
+env:
+  OMP_NUM_THREADS: "1"
+  PYTHONUNBUFFERED: "1"
+  HF_HUB_OFFLINE: "1"
+  TRANSFORMERS_OFFLINE: "1"
+  VLLM_ENGINE_READY_TIMEOUT_S: "3600"
+  VLLM_USE_RUST_FRONTEND: "0"
+  VLLM_HAS_FLASHINFER_CUBIN: "1"
+  VLLM_USE_BREAKABLE_CUDAGRAPH: "1"
+  VLLM_USE_FLASHINFER_SAMPLER: "0"
+  DSV41_ENGRAM_DISK: "1"
+  DSV41_ENGRAM_DISK_THREADS: "32"
+  DSV41_ENGRAM_DISK_CHUNK: "16"
+  DSV41_ENGRAM_DIR: /engram-local
+  MAX_JOBS: "2"
+  FLASHINFER_NVCC_THREADS: "1"
+  # Use the FlashInfer modules compiled into the image. SparkRun's default
+  # workspace cache is empty on a new cluster and would rebuild at first boot.
+  FLASHINFER_WORKSPACE_BASE: /root
+  FLASHINFER_CACHE_DIR: /root/.cache/flashinfer
+  TORCH_CUDA_ARCH_LIST: 12.1a
+  FLASHINFER_CUDA_ARCH_LIST: 12.1a
+  FLASHINFER_DISABLE_VERSION_CHECK: "1"
+  TILELANG_CACHE_DIR: /cache/huggingface/sr-cache/tilelang
+  TRITON_CACHE_DIR: /cache/huggingface/sr-cache/triton
+  PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
+  NCCL_CUMEM_ENABLE: "0"
+  NCCL_NVLS_ENABLE: "0"
+command: |
+  vllm serve /models/DeepSeek-V4.1-Flash \
+    --served-model-name {served_model_name} \
+    --host {host} --port {port} \
+    --tensor-parallel-size {tensor_parallel} \
+    --gpu-memory-utilization {gpu_memory_utilization} \
+    --max-model-len {max_model_len} \
+    --max-num-seqs {max_num_seqs} \
+    --max-num-batched-tokens {max_num_batched_tokens} \
+    --block-size 128 \
+    --engram-config '{"cpu_offload":false}' \
+    --speculative-config '{speculative_config}' \
+    --compilation-config '{compilation_config}' \
+    --enable-chunked-prefill --enable-prefix-caching \
+    --tool-call-parser deepseek_v41 --enable-auto-tool-choice \
+    --reasoning-parser deepseek_v41 \
+    --default-chat-template-kwargs '{"thinking":false}' \
+    --limit-mm-per-prompt '{"image":4}' --mm-processor-cache-gb 1 \
+    --distributed-executor-backend mp
