@@ -22,6 +22,7 @@ defaults:
   reasoning_config: '{"reasoning_parser":"deepseek_v4","reasoning_start_str":"<think>","reasoning_end_str":"</think>"}'
   chat_template_kwargs: '{"thinking":false}'
 env:
+  OMP_NUM_THREADS: '1'
   PYTHONUNBUFFERED: '1'
   VLLM_ENGINE_READY_TIMEOUT_S: '3600'
   VLLM_ALLOW_LONG_MAX_MODEL_LEN: '1'

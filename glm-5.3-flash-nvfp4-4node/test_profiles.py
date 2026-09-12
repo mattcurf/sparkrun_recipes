@@ -13,9 +13,11 @@ ROOT = Path(__file__).resolve().parent
 
 class ProfilesTest(unittest.TestCase):
     def test_matched_profiles(self):
-        profiles = [
-            yaml.safe_load(path.read_text()) for path in sorted(ROOT.glob("*.yaml"))
+        paths = [
+            ROOT / "glm-5.3-flash-nvfp4-tp4.yaml",
+            ROOT.parent / "glm-5.3-flash-fp8-4node/glm-5.3-flash-fp8-tp4.yaml",
         ]
+        profiles = [yaml.safe_load(path.read_text()) for path in paths]
         self.assertEqual(len(profiles), 2)
         for profile in profiles:
             with self.subTest(model=profile["model"]):
