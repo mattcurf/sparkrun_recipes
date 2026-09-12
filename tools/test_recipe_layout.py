@@ -22,7 +22,7 @@ class RecipeLayoutTest(unittest.TestCase):
                 folder = path.parent.name
                 self.assertNotIn(folder, folders, "one recipe per directory")
                 folders.add(folder)
-                match = re.fullmatch(r"(.+)-(fp8|nvfp4|exl3)-(\d+)node", folder)
+                match = re.fullmatch(r"(.+)-(fp8|mxfp4|nvfp4|exl3)-(\d+)node", folder)
                 self.assertIsNotNone(match)
                 recipe = yaml.safe_load(path.read_text())
                 nodes = int(match.group(3))
