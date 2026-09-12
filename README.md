@@ -50,43 +50,6 @@ sparkrun run <recipe.yaml> --cluster <cluster-name>
 sparkrun status
 ```
 
-## CPU threading policy
-
-All GPU-serving recipes explicitly set `OMP_NUM_THREADS: "1"`. This is a
-conservative steady-state serving default, not a benchmark-proven optimum for
-every model on DGX Spark. Twenty CPU cores do not eliminate synchronization and
-spin-wait overhead from small parallel CPU operations in a GPU-serving loop.
-
-Current [vLLM thread management](https://github.com/vllm-project/vllm/blob/7635a9002baecca64909dbcf8b1d461d26fb879d/vllm/utils/torch_utils.py)
-reduces Torch CPU threads to one for serving when OMP is not externally set;
-an explicit setting prevents inherited container values from retaining larger
-thread pools. Older pinned images may manage threads differently. Explicitly
-setting one can also reduce CPU parallelism during model loading, increasing
-startup time compared with upstream's automatic startup/serving distinction.
-
-This does not limit GPU parallelism, request concurrency, or all tokenizer,
-networking, and BLAS thread pools. All current recipes use vLLM, including EXL3.
-No additional BLAS environment overrides are imposed by this policy.
-
-Use a different value only with a documented, controlled comparison on the
-pinned runtime, changing only thread settings while keeping prompts, warmup,
-cache behavior, concurrency, and model configuration fixed. The earlier TP2/TP4
-comparison changed several settings and is not evidence of an OpenMP optimum.
-Recipe changes take effect on the next launch; they do not alter running servers.
-
-## Repository checks
-
-With Python and PyYAML installed, run these non-deploying checks from the root:
-
-```bash
-python3 -m unittest discover -s tools -v
-python3 -m unittest discover -s glm-5.3-flash-nvfp4-4node -v
-for recipe in */*.yaml; do sparkrun recipe validate "$recipe" || exit; done
-```
-
-The layout checks cover one recipe per folder, model/quant/node naming, node
-counts, OpenMP policy, index context sizes, and relative Markdown link targets.
-
 ## Tools
 
 [`tools/cleanup-memory.sh`](tools/cleanup-memory.sh) reclaims page cache and
