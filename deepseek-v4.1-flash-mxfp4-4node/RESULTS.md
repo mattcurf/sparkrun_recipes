@@ -80,12 +80,3 @@ analysis script) and TC-63 (final answer omitted accumulated constraints). The
 weakest category was Context & State at 65%; Parameter Precision, Restraint &
 Refusal, Localization, Structured Reasoning, Instruction Following, Toolset
 Scale, Creative Composition, and Structured Output each scored 100%.
-
-## Runtime caveat
-
-SparkRun 0.3.6 applies the recipe's 112 GiB RAM limit at container creation but
-cannot express the reference's matching 112 GiB combined memory-and-swap limit;
-Docker therefore reports 224 GiB combined. Post-launch `docker update` is not a
-workaround: it reproducibly removed GPU access on the two nodes running NVIDIA
-driver 580.159.03. Across final startup and all tests, the highest cgroup RAM
-peak was 34.9 GiB and the highest swap peak was 14.0 GiB, with no OOM events.
