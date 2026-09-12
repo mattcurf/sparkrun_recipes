@@ -2,15 +2,14 @@
 # SPDX-License-Identifier: MIT
 set -euo pipefail
 
-if [[ $# -ne 6 ]]; then
-  echo "Usage: $0 SHARED_MODEL_DIR LOCAL_ENGRAM_DIR RANK0_HOST RANK1_HOST RANK2_HOST RANK3_HOST" >&2
+if [[ $# -ne 5 ]]; then
+  echo "Usage: $0 SHARED_MODEL_DIR RANK0_HOST RANK1_HOST RANK2_HOST RANK3_HOST" >&2
   exit 2
 fi
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 MODEL_DIR=$1
-LOCAL_ENGRAM_DIR=$2
-shift 2
+shift
 HOSTS=("$@")
 REVISION=dba1be0a40aa45a94ad051997016db3960a90277
 
@@ -28,8 +27,10 @@ ranges=(
 
 for rank in 0 1 2 3; do
   host=${HOSTS[$rank]}
-  ssh "$host" "test -r '$MODEL_DIR/config.json' && mkdir -p '$LOCAL_ENGRAM_DIR'"
+  ssh "$host" "test -r '$MODEL_DIR/config.json'"
+  scp "$ROOT/prepare-engram-home.sh" "$host:/tmp/dsv41-prepare-engram-home.sh"
   scp "$ROOT/engram_local.py" "$host:/tmp/dsv41-engram-local.py"
+  local_engram_dir=$(ssh "$host" "bash /tmp/dsv41-prepare-engram-home.sh")
   # shellcheck disable=SC2086
-  ssh "$host" "python3 /tmp/dsv41-engram-local.py '$MODEL_DIR' '$LOCAL_ENGRAM_DIR' ${ranges[$rank]} --mbps=600"
+  ssh "$host" "python3 /tmp/dsv41-engram-local.py '$MODEL_DIR' '$local_engram_dir' ${ranges[$rank]} --mbps=600"
 done

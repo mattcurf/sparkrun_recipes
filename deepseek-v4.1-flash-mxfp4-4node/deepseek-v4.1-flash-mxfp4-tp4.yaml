@@ -28,8 +28,8 @@ executor_config:
   ulimit: [memlock=-1:-1]
   devices: [/dev/infiniband:/dev/infiniband]
   volumes:
-    # Keep this host source in sync with LOCAL_ENGRAM_DIR passed to setup-model.sh.
-    - /var/lib/sparkrun/engram/DeepSeek-V4.1-Flash:/engram-local:ro
+    # setup-model.sh links this stable source to the SSH user's local Engram directory.
+    - /var/tmp/sparkrun-deepseek-v4.1-flash-engram:/engram-local:ro
 distribution_config:
   externally_provided: true
   models:

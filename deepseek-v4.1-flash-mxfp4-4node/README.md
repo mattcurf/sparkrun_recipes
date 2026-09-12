@@ -21,14 +21,20 @@ that path through SparkRun's supported `cluster_config.resolved_model_path`
 schema. Its example location is `/srv/sparkrun/models/DeepSeek-V4.1-Flash`;
 change that field when your shared model storage uses another path.
 
-The local Engram source in `executor_config.volumes` similarly defaults to
-`/var/lib/sparkrun/engram/DeepSeek-V4.1-Flash`. Keep it in sync with the second
-setup argument if you choose another local disk. Prepare both locations from a
-host with `hf`, then name the four nodes in SparkRun rank order:
+Engram rows always live under the SSH user's home directory on each host at
+`$HOME/.local/share/sparkrun/engram/DeepSeek-V4.1-Flash`. SparkRun 0.3.6 quotes
+Docker volume sources, so putting `~/...` directly in `executor_config.volumes`
+would pass a literal tilde instead of expanding the remote user's home. The setup
+script therefore creates a stable per-host symlink at
+`/var/tmp/sparkrun-deepseek-v4.1-flash-engram`, which the recipe mounts read-only
+at `/engram-local`. This avoids both control-host expansion and the container's
+root `$HOME` while keeping setup and serving paths fixed.
+
+Prepare the shared checkpoint and local Engram directories from a host with
+`hf`, then name the four nodes in SparkRun rank order:
 
 ```bash
 ./setup-model.sh /srv/sparkrun/models/DeepSeek-V4.1-Flash \
-  /var/lib/sparkrun/engram/DeepSeek-V4.1-Flash \
   <rank-0> <rank-1> <rank-2> <rank-3>
 ```
 

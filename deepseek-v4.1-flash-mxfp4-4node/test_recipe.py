@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: Unlicense
 import hashlib
 import json
+import os
+import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -39,6 +42,7 @@ class DeepSeekV41RecipeTest(unittest.TestCase):
             for path in (
                 ROOT / "deepseek-v4.1-flash-mxfp4-tp4.yaml",
                 ROOT / "setup-model.sh",
+                ROOT / "prepare-engram-home.sh",
                 ROOT / "engram_local.py",
                 ROOT / "README.md",
                 ROOT / "RESULTS.md",
@@ -47,7 +51,7 @@ class DeepSeekV41RecipeTest(unittest.TestCase):
         self.assertEqual(model_path, "/srv/sparkrun/models/DeepSeek-V4.1-Flash")
         self.assertIn("{resolved_model_path}", self.recipe["command"])
         self.assertIn(
-            "/var/lib/sparkrun/engram/DeepSeek-V4.1-Flash:/engram-local:ro",
+            "/var/tmp/sparkrun-deepseek-v4.1-flash-engram:/engram-local:ro",
             volumes,
         )
         self.assertNotIn("/home/", tracked_text)
@@ -58,6 +62,32 @@ class DeepSeekV41RecipeTest(unittest.TestCase):
         self.assertIn("'1:0:96000564 14:0:96003054'", setup)
         self.assertIn("for rank in 0 1 2 3", setup)
         self.assertNotIn("if (( rank == 0 ))", setup)
+        self.assertNotIn("LOCAL_ENGRAM_DIR", setup)
+
+    def test_engram_path_resolves_each_remote_home(self):
+        helper = ROOT / "prepare-engram-home.sh"
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for hostname in ("host-a", "host-b"):
+                home = root / hostname / "home"
+                mount_source = root / hostname / "mount-source"
+                home.mkdir(parents=True)
+                env = {**os.environ, "HOME": str(home)}
+                result = subprocess.run(
+                    ["bash", helper, mount_source],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                    env=env,
+                )
+                expected = (
+                    home
+                    / ".local/share/sparkrun/engram/DeepSeek-V4.1-Flash"
+                )
+                self.assertEqual(result.stdout.strip(), str(expected))
+                self.assertTrue(expected.is_dir())
+                self.assertTrue(mount_source.is_symlink())
+                self.assertEqual(mount_source.resolve(), expected.resolve())
 
     def test_pinned_patch_set(self):
         expected = {
