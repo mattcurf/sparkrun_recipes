@@ -1,0 +1,191 @@
+[
+  {
+    "content": "5017",
+    "reasoning": "173*29 = 173*30 - 173 = 5190-173 = 5017",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 26,
+      "total_tokens": 54,
+      "completion_tokens": 28,
+      "completion_tokens_details": {
+        "reasoning_tokens": 23
+      }
+    },
+    "seconds": 0.6530719078145921,
+    "ttft_seconds": 0.25767460302449763,
+    "output_tokens_per_second": 42.87429862616175,
+    "corruption": false,
+    "repetition": false,
+    "name": "arithmetic",
+    "passed": true
+  },
+  {
+    "content": "안녕하세요 세계",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 27,
+      "total_tokens": 35,
+      "completion_tokens": 8,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 0.4405680128838867,
+    "ttft_seconds": 0.44044871791265905,
+    "output_tokens_per_second": 18.158376836378334,
+    "corruption": false,
+    "repetition": false,
+    "name": "korean",
+    "passed": true
+  },
+  {
+    "content": "{\"values\": [-1, 2, 4, 9]}",
+    "reasoning": "[-1,2,4,9]",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 42,
+      "total_tokens": 68,
+      "completion_tokens": 26,
+      "completion_tokens_details": {
+        "reasoning_tokens": 9
+      }
+    },
+    "seconds": 0.83104756497778,
+    "ttft_seconds": 0.40400964906439185,
+    "output_tokens_per_second": 31.28581454985091,
+    "corruption": false,
+    "repetition": false,
+    "name": "json",
+    "passed": true
+  },
+  {
+    "content": "# The Mutable Default Argument Bug\n\nIn Python, default arguments are evaluated **once**, at function definition time — not on each call. So `items=[]` creates a single list shared by all calls that omit the argument.\n\n```python\ndef collect(item, items=[]):\n    items.append(item)\n    return items\n\ncollect(\"a\")  # ['a']\ncollect(\"b\")  # ['a', 'b']  ← surprise! same list\n```\n\nEach call mutates the same list, so state \"leaks\" between calls.\n\n## Corrected version\n\n```python\ndef collect(item, items=None):\n    if items is None:\n        items = []\n    items.append(item)\n    return items\n```\n\nNow a fresh list is created on every call that omits `items`, and callers can still pass their own list explicitly:\n\n```python\ncollect(\"a\")  # ['a']\ncollect(\"b\")  # ['b']  ✓\n```\n\n**Rule of thumb:** never use mutable defaults (`[]`, `{}`, `set()`); use `None` as a sentinel and create the object inside the function.",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 55,
+      "total_tokens": 288,
+      "completion_tokens": 233,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 5.931807139888406,
+    "ttft_seconds": 0.508243182906881,
+    "output_tokens_per_second": 39.27976660488382,
+    "corruption": false,
+    "repetition": false,
+    "name": "debug",
+    "passed": true
+  },
+  {
+    "content": "21",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 25,
+      "total_tokens": 28,
+      "completion_tokens": 3,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 0.5208888740744442,
+    "ttft_seconds": 0.520758266095072,
+    "output_tokens_per_second": 5.759385829329976,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-11",
+    "passed": true
+  },
+  {
+    "content": "32",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 25,
+      "total_tokens": 28,
+      "completion_tokens": 3,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 0.5200718501582742,
+    "ttft_seconds": 0.5196319310925901,
+    "output_tokens_per_second": 5.768433725238168,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-22",
+    "passed": true
+  },
+  {
+    "content": "43",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 25,
+      "total_tokens": 28,
+      "completion_tokens": 3,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 0.5198441380634904,
+    "ttft_seconds": 0.5194043461233377,
+    "output_tokens_per_second": 5.770960525159562,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-33",
+    "passed": true
+  },
+  {
+    "content": "54",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 25,
+      "total_tokens": 28,
+      "completion_tokens": 3,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 0.5203016728628427,
+    "ttft_seconds": 0.5202119939494878,
+    "output_tokens_per_second": 5.765885747576355,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-44",
+    "passed": true
+  },
+  {
+    "content": "```python\ndef clamp_00(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_01(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_02(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_03(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_04(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_05(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_06(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_07(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_08(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_09(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_10(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_11(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_12(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_13(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_14(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_15(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_16(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_17(x, low, high):\n    return min(max",
+    "reasoning": "User wants 40 functions clamp_00..clamp_39, each returning min(max(x, low), high). Code only.",
+    "tool_deltas": [],
+    "finish_reason": "length",
+    "usage": {
+      "prompt_tokens": 256545,
+      "total_tokens": 256929,
+      "completion_tokens": 384,
+      "completion_tokens_details": {
+        "reasoning_tokens": 26
+      }
+    },
+    "seconds": 124.62349309795536,
+    "ttft_seconds": 119.15161346201785,
+    "output_tokens_per_second": 3.081280988474396,
+    "corruption": false,
+    "repetition": false,
+    "name": "perf-long",
+    "passed": true
+  }
+]

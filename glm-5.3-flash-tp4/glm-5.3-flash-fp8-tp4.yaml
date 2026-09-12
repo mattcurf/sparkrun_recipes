@@ -1,0 +1,74 @@
+# SPDX-License-Identifier: Unlicense
+recipe_version: "2"
+model: zai-org/GLM-5.3-Flash
+model_revision: eb9eb208eb0d988989d07a6a12d0fdeb5f52574a
+runtime: vllm-distributed
+# Shared native NoPE and DFlash2 integration; no weight conversion.
+container: glm53-flash-nvfp4-sparkrun-v2
+min_nodes: 4
+max_nodes: 4
+cluster_only: true
+metadata:
+  description: Native GLM-5.3-Flash FP8, four Sparks, TP4 + EP, DFlash2, FP8 KV, 256K context
+  # Rounded-up GiB from the pinned checkpoint index (328326771576 bytes).
+  model_vram: 305.78
+  kv_lora_rank: 512
+mods:
+  - use-official-vllm
+executor_config:
+  entrypoint: ""
+  user: root
+  shm_size: 32gb
+distribution_config:
+  models:
+    entries:
+      - name: zai-org/GLM-5.3-Flash
+        target: [-1]
+        revision: eb9eb208eb0d988989d07a6a12d0fdeb5f52574a
+      - name: incoai/GLM-5.3-Flash-DFlash2
+        target: [-1]
+        revision: dc77ff1c99eeb2df044ee3d4f0094eb033fee410
+defaults:
+  host: 0.0.0.0
+  port: 8000
+  served_model_name: GLM-5.3-Flash-FP8-TP4
+  revision: eb9eb208eb0d988989d07a6a12d0fdeb5f52574a
+  tensor_parallel: 4
+  gpu_memory_utilization: 0.80
+  max_model_len: 262144
+  max_num_seqs: 4
+  max_num_batched_tokens: 8192
+  kv_cache_dtype: fp8
+  # FP8 weights leave less headroom; 12 GiB hit the GB10 allocation ceiling.
+  kv_cache_memory_bytes: 8589934592
+  # Native block-scaled W8A8; SM121 CUTLASS FP8 MoE lacks this scale scheme.
+  moe_backend: triton
+  speculative_config: '{"method":"dflash","model":"incoai/GLM-5.3-Flash-DFlash2","revision":"dc77ff1c99eeb2df044ee3d4f0094eb033fee410","num_speculative_tokens":7,"kv_cache_dtype":"auto"}'
+  execution_flags: --no-enforce-eager
+env:
+  VLLM_GLM53_CUDA_SPARSE_MLA: "1"
+  OMP_NUM_THREADS: "1"
+  PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
+  VLLM_NO_USAGE_STATS: "1"
+  DO_NOT_TRACK: "1"
+command: |
+  vllm serve {model} \
+    --revision {revision} \
+    --host {host} --port {port} \
+    --served-model-name {served_model_name} \
+    --tensor-parallel-size {tensor_parallel} \
+    --gpu-memory-utilization {gpu_memory_utilization} \
+    --max-model-len {max_model_len} \
+    --max-num-seqs {max_num_seqs} \
+    --max-num-batched-tokens {max_num_batched_tokens} \
+    --kv-cache-dtype {kv_cache_dtype} \
+    --kv-cache-memory-bytes {kv_cache_memory_bytes} \
+    --moe-backend {moe_backend} \
+    --speculative-config '{speculative_config}' \
+    --default-chat-template-kwargs '{"reasoning_effort":"low"}' \
+    --load-format safetensors --safetensors-load-strategy lazy \
+    --enable-expert-parallel --enable-ep-weight-filter \
+    --all2all-backend allgather_reducescatter \
+    --enable-chunked-prefill --no-enable-flashinfer-autotune \
+    --reasoning-parser glm45 --tool-call-parser glm47 \
+    --enable-auto-tool-choice {execution_flags}

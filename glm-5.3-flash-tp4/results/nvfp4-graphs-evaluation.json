@@ -1,0 +1,306 @@
+[
+  {
+    "content": "```python\ndef merge_intervals(intervals):\n    if not intervals:\n        return []\n    intervals = sorted(intervals, key=lambda x: x[0])\n    merged = [list(intervals[0])]\n    for start, end in intervals[1:]:\n        if start <= merged[-1][1]:\n            merged[-1][1] = max(merged[-1][1], end)\n        else:\n            merged.append([start, end])\n    return [tuple(interval) for interval in merged]\n\n\nassert merge_intervals([(1, 3), (2, 6), (8, 10), (15, 18)]) == [(1, 6), (8, 10), (15, 18)]\nassert merge_intervals([(1, 4), (4, 5)]) == [(1, 5)]\nassert merge_intervals([(5, 7), (1, 2)]) == [(1, 2), (5, 7)]\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 42,
+      "total_tokens": 243,
+      "completion_tokens": 201,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 3.0296809300780296,
+    "ttft_seconds": 0.30856121191754937,
+    "output_tokens_per_second": 66.34361988568322,
+    "corruption": false,
+    "repetition": false,
+    "name": "code-0",
+    "passed": true,
+    "decode_tokens_per_second": 73.49915502255195
+  },
+  {
+    "content": "A distributed database can return stale reads because data is typically replicated across multiple nodes for availability and performance. When a client writes a value, the update is applied to a primary replica or a quorum of nodes, then propagated asynchronously to other replicas. If a subsequent read is routed to a replica that hasn't yet received the update—due to replication lag, network delays, or the client being switched to a different server behind a load balancer—the read returns an older version of the data. This is especially common in eventually consistent systems, where the system only guarantees that replicas will converge given time, with no bound on how quickly that happens.\n\nRead-your-writes consistency guarantees that any read issued by a client reflects all writes that client has previously performed. One common way to achieve it is session stickiness: route all of a client's reads and writes to the same replica, or pin them to the same session, so the client always reads from a node that has seen its own writes. Alternatively, the database can track per-client version vectors or timestamps: each write records a version, and reads are directed to replicas (or wait until replicas) that have caught up to that version.\n\nClients can also enforce this themselves. After writing, a client can read only from the primary or from a quorum that includes the node that acknowledged the write (e.g., write to W replicas, read from R replicas where R + W > N). If a chosen replica lags, the client can retry, read from the leader, or wait for the replica to catch up before proceeding.",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 43,
+      "total_tokens": 361,
+      "completion_tokens": 318,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 9.878976064035669,
+    "ttft_seconds": 0.3536859641317278,
+    "output_tokens_per_second": 32.18957085620203,
+    "corruption": false,
+    "repetition": false,
+    "name": "prose-0",
+    "passed": true,
+    "decode_tokens_per_second": 33.27982630189886
+  },
+  {
+    "content": "```python\ndef merge_intervals(intervals):\n    if not intervals:\n        return []\n    intervals = sorted(intervals, key=lambda x: x[0])\n    merged = [list(intervals[0])]\n    for start, end in intervals[1:]:\n        if start <= merged[-1][1]:\n            merged[-1][1] = max(merged[-1][1], end)\n        else:\n            merged.append([start, end])\n    return [tuple(interval) for interval in merged]\n\n\nassert merge_intervals([(1, 3), (2, 6), (8, 10), (15, 18)]) == [(1, 6), (8, 10), (15, 18)]\nassert merge_intervals([(1, 4), (4, 5)]) == [(1, 5)]\nassert merge_intervals([(5, 7), (1, 2)]) == [(1, 2), (5, 7)]\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 42,
+      "total_tokens": 243,
+      "completion_tokens": 201,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 2.9168722541071475,
+    "ttft_seconds": 0.32283155294135213,
+    "output_tokens_per_second": 68.90942848696196,
+    "corruption": false,
+    "repetition": false,
+    "name": "code-1",
+    "passed": true,
+    "decode_tokens_per_second": 77.0997925784732
+  },
+  {
+    "content": "A distributed database can return stale reads because data is typically replicated across multiple nodes for availability and performance. When a client writes a value, the update may be applied to a primary node or a majority of replicas first, while other replicas receive it asynchronously. If a subsequent read is routed to a replica that hasn't yet received the update—due to replication lag, network delays, or the client being routed to a different server—the database returns an older version of the data. This is especially common in eventually consistent systems, where the system guarantees only that replicas will converge over time, without specifying how quickly.\n\nRead-your-writes consistency guarantees that a client always sees its own previous writes, even if other clients might briefly see stale data. One common approach is session stickiness: route all of a client's reads and writes within a session to the same replica or leader, ensuring the client's operations hit a node that has its own updates. Alternatively, the system can track version information: after each write, the client records a timestamp or version stamp (such as a logical clock or high-water mark), and any subsequent read is sent only to replicas that have caught up to that version, or the read waits/retries until they do.\n\nPractical implementations vary by system. Some databases offer \"consistent prefix\" or \"monotonic reads\" guarantees alongside read-your-writes, and clients may pass session tokens explicitly. The tradeoff is availability and latency: enforcing read-your-writes may require waiting for replication or rejecting reads from lagging replicas, which can increase response times or fail reads during network partitions.",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 43,
+      "total_tokens": 365,
+      "completion_tokens": 322,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 9.963260567048565,
+    "ttft_seconds": 0.3598935471381992,
+    "output_tokens_per_second": 32.31873720787237,
+    "corruption": false,
+    "repetition": false,
+    "name": "prose-1",
+    "passed": true,
+    "decode_tokens_per_second": 33.42577653592543
+  },
+  {
+    "content": "```python\ndef merge_intervals(intervals):\n    if not intervals:\n        return []\n    intervals = sorted(intervals)\n    merged = [list(intervals[0])]\n    for start, end in intervals[1:]:\n        if start <= merged[-1][1]:\n            merged[-1][1] = max(merged[-1][1], end)\n        else:\n            merged.append([start, end])\n    return merged\n\n\nassert merge_intervals([[1, 3], [2, 6], [8, 10], [15, 18]]) == [[1, 6], [8, 10], [15, 18]]\nassert merge_intervals([[1, 4], [4, 5]]) == [[1, 5]]\nassert merge_intervals([[5, 7], [1, 2]]) == [[1, 2], [5, 7]]\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 42,
+      "total_tokens": 228,
+      "completion_tokens": 186,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 2.502865363843739,
+    "ttft_seconds": 0.32552519789896905,
+    "output_tokens_per_second": 74.31482439564915,
+    "corruption": false,
+    "repetition": false,
+    "name": "code-2",
+    "passed": true,
+    "decode_tokens_per_second": 84.96605302815723
+  },
+  {
+    "content": "A distributed database replicates data across multiple nodes to improve availability and performance, but replication introduces lag. When a client writes a value, the update is applied to a primary or leader node and then asynchronously propagated to replicas. If a subsequent read is routed to a replica that hasn't yet received the update—perhaps due to network delay, failover, or load-balancing across sessions—the client sees an older version of the data. This is a stale read. It's not a bug but a consequence of trading strong consistency for lower latency and higher throughput; the system eventually converges, but \"eventually\" may span milliseconds or, during partitions, much longer.\n\nRead-your-writes consistency guarantees that a client always sees its own prior writes, even if other clients' data may lag. The simplest mechanism is session affinity: pin a client's operations to the leader or to the replica holding the authoritative copy, so reads follow writes in the same place. Alternatively, the database can return a version token (like a timestamp or logical clock) with each write; the client attaches this token to later reads, and any replica whose replication lag falls behind that version either blocks, retries, or redirects to a node that is sufficiently caught up.\n\nClients can also enforce this themselves: perform critical reads against the leader, use synchronous replication with write acknowledgments from a quorum, or issue a read-after-write confirmation before proceeding. The tradeoff is latency and availability—stronger guarantees mean waiting for replication, which is why many systems make read-your-writes an opt-in per-session or per-operation setting rather than the default.",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 43,
+      "total_tokens": 368,
+      "completion_tokens": 325,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 11.613182788947597,
+    "ttft_seconds": 0.3638270809315145,
+    "output_tokens_per_second": 27.98543740388779,
+    "corruption": false,
+    "repetition": false,
+    "name": "prose-2",
+    "passed": true,
+    "decode_tokens_per_second": 28.80164948194532
+  },
+  {
+    "content": "```python\ndef clamp_0(x, low, high):\n    if x < low:\n        return low\n    if x > high:\n        return high\n    return x\n\nassert clamp_0(5, 0, 10) == 5\nassert clamp_0(-3, 0, 10) == 0\nassert clamp_0(15, 0, 10) == 10\nassert clamp_0(0, 0, 10) == 0\nassert clamp_0(10, 0, 10) == 10\nassert clamp_0(2.5, 1.0, 2.0) == 2.0\nassert clamp_0(1.5, 1.0, 2.0) == 1.5\nassert clamp_0(-100, -50, 50) == -50\nassert clamp_0(100, -50, 50) == 50\nassert clamp_0(7, 7, 7) == 7\n```",
+    "reasoning": "Output code only.",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 40,
+      "total_tokens": 270,
+      "completion_tokens": 230,
+      "completion_tokens_details": {
+        "reasoning_tokens": 4
+      }
+    },
+    "seconds": 9.428799658780918,
+    "ttft_seconds": 4.7597381139639765,
+    "output_tokens_per_second": 24.393348922819037,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-code-0",
+    "passed": true,
+    "decode_tokens_per_second": 49.04625861147829
+  },
+  {
+    "content": "```python\ndef clamp_1(x, low, high):\n    return max(low, min(x, high))\n\nassert clamp_1(5, 0, 10) == 5\nassert clamp_1(-5, 0, 10) == 0\nassert clamp_1(15, 0, 10) == 10\nassert clamp_1(0, 0, 10) == 0\nassert clamp_1(10, 0, 10) == 10\nassert clamp_1(3.5, 1.0, 2.0) == 2.0\nassert clamp_1(-1.5, -2.0, 2.0) == -1.5\nassert clamp_1(7, 7, 7) == 7\nassert clamp_1(100, -100, 100) == 100\nassert clamp_1(0, 1, 2) == 1\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 40,
+      "total_tokens": 252,
+      "completion_tokens": 212,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 9.813010840909556,
+    "ttft_seconds": 4.883454409893602,
+    "output_tokens_per_second": 21.60397083392501,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-code-1",
+    "passed": true,
+    "decode_tokens_per_second": 42.803039777052334
+  },
+  {
+    "content": "```python\ndef clamp_2(x, low, high):\n    \"\"\"Return x clamped to the range [low, high].\"\"\"\n    if low > high:\n        raise ValueError(\"low must be <= high\")\n    return max(low, min(x, high))\n\n\nassert clamp_2(5, 0, 10) == 5\nassert clamp_2(-3, 0, 10) == 0\nassert clamp_2(15, 0, 10) == 10\nassert clamp_2(0, 0, 10) == 0\nassert clamp_2(10, 0, 10) == 10\nassert clamp_2(2.5, 1.0, 3.0) == 2.5\nassert clamp_2(-1.5, -2.0, 2.0) == -1.5\nassert clamp_2(7, 7, 7) == 7\nassert clamp_2(100, -100, 100) == 100\nassert clamp_2(0.1, 0.5, 1.0) == 0.5\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 40,
+      "total_tokens": 291,
+      "completion_tokens": 251,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 10.355271111009642,
+    "ttft_seconds": 4.882974650012329,
+    "output_tokens_per_second": 24.238863213647665,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-code-2",
+    "passed": true,
+    "decode_tokens_per_second": 45.684659407951386
+  },
+  {
+    "content": "```python\ndef clamp_3(x, low, high):\n    \"\"\"Return x clamped to the range [low, high].\"\"\"\n    if low > high:\n        raise ValueError(\"low must be <= high\")\n    return max(low, min(x, high))\n\n\nassert clamp_3(5, 0, 10) == 5\nassert clamp_3(-3, 0, 10) == 0\nassert clamp_3(15, 0, 10) == 10\nassert clamp_3(0, 0, 10) == 0\nassert clamp_3(10, 0, 10) == 10\nassert clamp_3(3.7, 1.0, 3.0) == 3.0\nassert clamp_3(-1.5, -2.0, 2.0) == -1.5\nassert clamp_3(7, 7, 7) == 7\nassert clamp_3(0, -5, 5) == 0\nassert clamp_3(100, 1, 99) == 99\n```",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 40,
+      "total_tokens": 283,
+      "completion_tokens": 243,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 10.463730979943648,
+    "ttft_seconds": 4.882331464905292,
+    "output_tokens_per_second": 23.2230741086301,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-code-3",
+    "passed": true,
+    "decode_tokens_per_second": 43.35830096877359
+  },
+  {
+    "name": "aggregate-c4",
+    "seconds": 10.477838398190215,
+    "output_tokens_per_second": 89.33140256884192,
+    "passed": true
+  },
+  {
+    "content": "{\"begin\": \"AMBER-7319\", \"middle\": \"COBALT-4826\", \"end\": \"JADE-9053\"}",
+    "reasoning": "Simple extraction.",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 256572,
+      "total_tokens": 256611,
+      "completion_tokens": 39,
+      "completion_tokens_details": {
+        "reasoning_tokens": 3
+      }
+    },
+    "seconds": 91.22510279598646,
+    "ttft_seconds": 90.76368949003518,
+    "output_tokens_per_second": 0.4275139057636211,
+    "corruption": false,
+    "repetition": false,
+    "name": "near-256k-retrieval",
+    "passed": true,
+    "decode_tokens_per_second": 82.35566575536114
+  },
+  {
+    "name": "automatic-tool-call",
+    "reply": {
+      "id": "chatcmpl-b2113f5dcf7b032c",
+      "object": "chat.completion",
+      "created": 1789106225,
+      "model": "GLM-5.3-Flash-NVFP4-TP4",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": null,
+            "refusal": null,
+            "annotations": null,
+            "audio": null,
+            "function_call": null,
+            "tool_calls": [
+              {
+                "id": "chatcmpl-tool-b0f0c5ae8f3baec5",
+                "type": "function",
+                "function": {
+                  "name": "get_weather",
+                  "arguments": "{\"city\": \"Paris\"}"
+                }
+              }
+            ],
+            "reasoning": null
+          },
+          "logprobs": null,
+          "finish_reason": "tool_calls",
+          "stop_reason": 154829,
+          "token_ids": null,
+          "routed_experts": null
+        }
+      ],
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.28.1rc1.dev580+g385dce36b-tp4-ep-b022b8d5",
+      "usage": {
+        "prompt_tokens": 166,
+        "total_tokens": 178,
+        "completion_tokens": 12,
+        "prompt_tokens_details": null,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "prompt_logprobs": null,
+      "prompt_token_ids": null,
+      "prompt_text": null,
+      "kv_transfer_params": null,
+      "ec_transfer_params": null,
+      "metrics": null
+    },
+    "passed": true
+  }
+]

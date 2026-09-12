@@ -1,0 +1,380 @@
+[
+  {
+    "content": "5017",
+    "reasoning": "173*29 = 173*30 - 173 = 5190-173 = 5017",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 26,
+      "total_tokens": 54,
+      "completion_tokens": 28,
+      "completion_tokens_details": {
+        "reasoning_tokens": 23
+      }
+    },
+    "seconds": 0.7163726300932467,
+    "ttft_seconds": 0.24641550797969103,
+    "output_tokens_per_second": 39.08580370575489,
+    "corruption": false,
+    "repetition": false,
+    "name": "arithmetic",
+    "passed": true
+  },
+  {
+    "content": "안녕하세요 세계",
+    "reasoning": "Simple repeat.",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 27,
+      "total_tokens": 38,
+      "completion_tokens": 11,
+      "completion_tokens_details": {
+        "reasoning_tokens": 3
+      }
+    },
+    "seconds": 0.5169335489626974,
+    "ttft_seconds": 0.3253041401039809,
+    "output_tokens_per_second": 21.279330819354065,
+    "corruption": false,
+    "repetition": false,
+    "name": "korean",
+    "passed": true
+  },
+  {
+    "content": "{\"values\": [-1, 2, 4, 9]}",
+    "reasoning": "[-1,2,4,9]",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 42,
+      "total_tokens": 68,
+      "completion_tokens": 26,
+      "completion_tokens_details": {
+        "reasoning_tokens": 9
+      }
+    },
+    "seconds": 1.0594163050409406,
+    "ttft_seconds": 0.7590551800094545,
+    "output_tokens_per_second": 24.54181597572754,
+    "corruption": false,
+    "repetition": false,
+    "name": "json",
+    "passed": true
+  },
+  {
+    "content": "**The bug:** Default arguments are evaluated once at function definition, not per call. So `items=[]` creates a single list shared across all calls. Each call appends to the same list, so results accumulate unexpectedly:\n\n```python\ncollect(\"a\")  # ['a']\ncollect(\"b\")  # ['a', 'b']  ← surprise!\n```\n\n**Fix:** Use `None` as a sentinel and create a fresh list inside the function:\n\n```python\ndef collect(item, items=None):\n    if items is None:\n        items = []\n    items.append(item)\n    return items\n```\n\nNow each call without an explicit list gets a new one:\n\n```python\ncollect(\"a\")  # ['a']\ncollect(\"b\")  # ['b']\n```\n\nCallers who pass their own list can still accumulate into it intentionally.",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 55,
+      "total_tokens": 231,
+      "completion_tokens": 176,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 3.6615449630189687,
+    "ttft_seconds": 0.37954884488135576,
+    "output_tokens_per_second": 48.06714154204645,
+    "corruption": false,
+    "repetition": false,
+    "name": "debug",
+    "passed": true
+  },
+  {
+    "content": "```python\ndef clamp_00(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_01(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_02(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_03(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_04(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_05(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_06(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_07(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_08(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_09(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_10(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_11(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_12(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_13(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_14(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_15(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_16(x, low, high):\n    return min(max(x, low),",
+    "reasoning": "Need 40 functions, each with low/high presumably fixed values. Just write clamp_00..39 with varying low/high? Simplest: each returns min(max(x, low), high) with some constants.",
+    "tool_deltas": [],
+    "finish_reason": "length",
+    "usage": {
+      "prompt_tokens": 45,
+      "total_tokens": 429,
+      "completion_tokens": 384,
+      "completion_tokens_details": {
+        "reasoning_tokens": 42
+      }
+    },
+    "seconds": 5.225193292135373,
+    "ttft_seconds": 0.28814061521552503,
+    "output_tokens_per_second": 73.49010429489226,
+    "corruption": false,
+    "repetition": false,
+    "name": "perf-0",
+    "passed": true
+  },
+  {
+    "content": "```python\ndef clamp_00(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_01(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_02(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_03(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_04(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_05(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_06(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_07(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_08(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_09(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_10(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_11(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_12(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_13(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_14(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_15(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_16(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_17(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_18(x, low, high):\n    return min(max(x",
+    "reasoning": "Write 40 functions.",
+    "tool_deltas": [],
+    "finish_reason": "length",
+    "usage": {
+      "prompt_tokens": 45,
+      "total_tokens": 429,
+      "completion_tokens": 384,
+      "completion_tokens_details": {
+        "reasoning_tokens": 5
+      }
+    },
+    "seconds": 4.223885484971106,
+    "ttft_seconds": 0.2731923919636756,
+    "output_tokens_per_second": 90.91155557277774,
+    "corruption": false,
+    "repetition": false,
+    "name": "perf-1",
+    "passed": true
+  },
+  {
+    "content": "21",
+    "reasoning": "21",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 25,
+      "total_tokens": 29,
+      "completion_tokens": 4,
+      "completion_tokens_details": {
+        "reasoning_tokens": 1
+      }
+    },
+    "seconds": 4.976138707017526,
+    "ttft_seconds": 4.863688847050071,
+    "output_tokens_per_second": 0.8038361138042754,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-11",
+    "passed": true
+  },
+  {
+    "content": "32",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 25,
+      "total_tokens": 28,
+      "completion_tokens": 3,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 4.975303185870871,
+    "ttft_seconds": 4.975194577826187,
+    "output_tokens_per_second": 0.6029783287417656,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-22",
+    "passed": true
+  },
+  {
+    "content": "43",
+    "reasoning": "43",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 25,
+      "total_tokens": 29,
+      "completion_tokens": 4,
+      "completion_tokens_details": {
+        "reasoning_tokens": 1
+      }
+    },
+    "seconds": 4.975781235145405,
+    "ttft_seconds": 4.8632317741867155,
+    "output_tokens_per_second": 0.8038938632886078,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-33",
+    "passed": true
+  },
+  {
+    "content": "54",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 25,
+      "total_tokens": 28,
+      "completion_tokens": 3,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 4.9750185299199075,
+    "ttft_seconds": 4.9747617619577795,
+    "output_tokens_per_second": 0.603012829391069,
+    "corruption": false,
+    "repetition": false,
+    "name": "concurrent-44",
+    "passed": true
+  },
+  {
+    "content": "대규모 언어 모델의 양자화는 모델의 가중치와 활성값을 높은 정밀도의 부동소수점 숫자에서 더 낮은 비트 수의 정수 등으로 변환하는 기술입니다. 이를 통해 모델이 차지하는 메모리 용량이 크게 줄어들어 개인용 컴퓨터나 모바일 기기 같은 제한된 환경에서도 실행할 수 있게 됩니다. 물론 낮은 정밀도로 인해 원래 성능이 다소 손실될 수 있지만, 적절한 양자화 기법을 사용하면 그 손실을 최소화하면서 효율성을 크게 높일 수 있습니다. 이러한 이유로 양자화는 대규모 언어 모델을 더 널리 보급하고 추론 비용을 절감하기 위한 핵심적인 모델 압축 방법으로 널리 활용되고 있습니다.",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 63,
+      "total_tokens": 316,
+      "completion_tokens": 253,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 8.732364293886349,
+    "ttft_seconds": 0.4248815148603171,
+    "output_tokens_per_second": 28.972680420253294,
+    "corruption": false,
+    "repetition": false,
+    "name": "korean-stress-0",
+    "passed": true
+  },
+  {
+    "content": "대규모 언어 모델의 양자화는 모델의 가중치와 활성값을 원래의 높은 정밀도 숫자 형식에서 더 낮은 비트 수의 형식으로 변환하는 기술입니다. 이를 통해 모델의 메모리 사용량과 저장 크기가 크게 줄어들어 개인용 컴퓨터나 모바일 기기 같은 제한된 환경에서도 대형 모델을 실행할 수 있게 됩니다. 물론 숫자 표현의 정밀도가 낮아지기 때문에 성능이 다소 저하될 수 있지만, 적절한 양자화 기법을 사용하면 그 손실을 최소화할 수 있습니다. 이런 이유로 양자화는 추론 비용을 줄이고 모델 배포를 효율화하기 위한 핵심적인 모델 압축 방법으로 널리 활용되고 있습니다.",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 63,
+      "total_tokens": 308,
+      "completion_tokens": 245,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 8.134105295874178,
+    "ttft_seconds": 0.3848863709717989,
+    "output_tokens_per_second": 30.120092018512487,
+    "corruption": false,
+    "repetition": false,
+    "name": "korean-stress-1",
+    "passed": true
+  },
+  {
+    "content": "대규모 언어 모델의 양자화란 모델의 가중치와 활성값을 원래의 높은 정밀도 부동소수점 숫자에서 더 낮은 비트 수의 숫자로 변환하는 기술을 말합니다. 이를 통해 모델의 메모리 사용량과 저장 용량이 크게 줄어들어 개인용 컴퓨터나 모바일 기기 같은 제한된 환경에서도 대형 모델을 실행할 수 있게 됩니다. 다만 숫자의 정밀도가 낮아지는 만큼 계산 과정에서 오차가 생길 수 있어 모델의 출력 품질이 다소 저하될 가능성이 있습니다. 그럼에도 불구하고 적절한 양자화 기법을 사용하면 성능 손실을 최소화하면서 효율성을 크게 높일 수 있어, 실제 서비스 환경에서 널리 활용되고 있습니다.",
+    "reasoning": "",
+    "tool_deltas": [],
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 63,
+      "total_tokens": 314,
+      "completion_tokens": 251,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "seconds": 8.779484122991562,
+    "ttft_seconds": 0.3835193570703268,
+    "output_tokens_per_second": 28.589379112001073,
+    "corruption": false,
+    "repetition": false,
+    "name": "korean-stress-2",
+    "passed": true
+  },
+  {
+    "content": "```python\ndef clamp_00(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_01(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_02(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_03(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_04(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_05(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_06(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_07(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_08(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_09(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_10(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_11(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_12(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_13(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_14(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_15(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_16(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_17(x, low, high):\n    return min(max",
+    "reasoning": "User wants 40 functions clamp_00..clamp_39, each returning min(max(x, low), high). Code only.",
+    "tool_deltas": [],
+    "finish_reason": "length",
+    "usage": {
+      "prompt_tokens": 30045,
+      "total_tokens": 30429,
+      "completion_tokens": 384,
+      "completion_tokens_details": {
+        "reasoning_tokens": 26
+      }
+    },
+    "seconds": 23.427817665971816,
+    "ttft_seconds": 19.37987589999102,
+    "output_tokens_per_second": 16.39077123934374,
+    "corruption": false,
+    "repetition": false,
+    "name": "perf-long",
+    "passed": true
+  },
+  {
+    "content": "```python\ndef clamp_00(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_01(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_02(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_03(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_04(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_05(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_06(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_07(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_08(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_09(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_10(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_11(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_12(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_13(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_14(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_15(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_16(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_17(x, low, high):\n    return min(max",
+    "reasoning": "User wants 40 functions clamp_00..clamp_39, each returning min(max(x, low), high). Code only.",
+    "tool_deltas": [],
+    "finish_reason": "length",
+    "usage": {
+      "prompt_tokens": 30050,
+      "total_tokens": 30434,
+      "completion_tokens": 384,
+      "completion_tokens_details": {
+        "reasoning_tokens": 26
+      }
+    },
+    "seconds": 47.198032554006204,
+    "ttft_seconds": 14.209010242018849,
+    "output_tokens_per_second": 8.135932351854056,
+    "corruption": false,
+    "repetition": false,
+    "name": "perf-long-concurrent-0",
+    "passed": true
+  },
+  {
+    "content": "```python\ndef clamp_00(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_01(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_02(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_03(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_04(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_05(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_06(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_07(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_08(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_09(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_10(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_11(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_12(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_13(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_14(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_15(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_16(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_17(x, low, high):\n    return min(max",
+    "reasoning": "User wants 40 functions clamp_00..clamp_39, each returning min(max(x, low), high). Code only.",
+    "tool_deltas": [],
+    "finish_reason": "length",
+    "usage": {
+      "prompt_tokens": 30050,
+      "total_tokens": 30434,
+      "completion_tokens": 384,
+      "completion_tokens_details": {
+        "reasoning_tokens": 26
+      }
+    },
+    "seconds": 48.012785751139745,
+    "ttft_seconds": 33.31187852402218,
+    "output_tokens_per_second": 7.99786960894858,
+    "corruption": false,
+    "repetition": false,
+    "name": "perf-long-concurrent-1",
+    "passed": true
+  },
+  {
+    "content": "```python\ndef clamp_00(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_01(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_02(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_03(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_04(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_05(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_06(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_07(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_08(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_09(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_10(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_11(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_12(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_13(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_14(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_15(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_16(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_17(x, low, high):\n    return min(max",
+    "reasoning": "User wants 40 functions clamp_00..clamp_39, each returning min(max(x, low), high). Code only.",
+    "tool_deltas": [],
+    "finish_reason": "length",
+    "usage": {
+      "prompt_tokens": 30050,
+      "total_tokens": 30434,
+      "completion_tokens": 384,
+      "completion_tokens_details": {
+        "reasoning_tokens": 26
+      }
+    },
+    "seconds": 47.69685093383305,
+    "ttft_seconds": 25.491895797895268,
+    "output_tokens_per_second": 8.05084596743504,
+    "corruption": false,
+    "repetition": false,
+    "name": "perf-long-concurrent-2",
+    "passed": true
+  },
+  {
+    "content": "```python\ndef clamp_00(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_01(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_02(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_03(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_04(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_05(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_06(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_07(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_08(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_09(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_10(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_11(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_12(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_13(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_14(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_15(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_16(x, low, high):\n    return min(max(x, low), high)\n\ndef clamp_17(x, low, high):\n    return min",
+    "reasoning": "User wants 40 functions clamp_00..clamp_39, each returning min(max(x, low), high). Output code only.",
+    "tool_deltas": [],
+    "finish_reason": "length",
+    "usage": {
+      "prompt_tokens": 30050,
+      "total_tokens": 30434,
+      "completion_tokens": 384,
+      "completion_tokens_details": {
+        "reasoning_tokens": 27
+      }
+    },
+    "seconds": 48.36186990584247,
+    "ttft_seconds": 41.71268647001125,
+    "output_tokens_per_second": 7.940139633716065,
+    "corruption": false,
+    "repetition": false,
+    "name": "perf-long-concurrent-3",
+    "passed": true
+  }
+]
