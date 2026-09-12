@@ -29,7 +29,7 @@ executor_config:
   devices: [/dev/infiniband:/dev/infiniband]
   volumes:
     # setup-model.sh links this stable source to the SSH user's local Engram directory.
-    - /var/tmp/sparkrun-deepseek-v4.1-flash-engram:/engram-local:ro
+    - /srv/sparkrun/engram/DeepSeek-V4.1-Flash:/engram-local:ro
 distribution_config:
   externally_provided: true
   models:

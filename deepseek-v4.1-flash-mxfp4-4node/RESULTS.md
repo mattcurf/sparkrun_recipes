@@ -27,6 +27,18 @@ respectively. These are useful parity checks (within 3%), not a controlled
 benchmark comparison; the reference's full benchmark uses different prompts,
 concurrency levels, token lengths, and a 300K server context.
 
+### Per-host Engram storage validation
+
+After moving every rank's sparse rows to
+`$HOME/.local/share/sparkrun/engram/DeepSeek-V4.1-Flash`, the four-node service
+was restarted from the checked-in recipe. It became healthy after 1,155 seconds,
+and every rank reported its disjoint row ranges as read from node-local
+`/engram-local`. The text, SSE streaming, and corruption smoke checks passed;
+the measured second runs were 85.3 tok/s for counting, 29.7 tok/s for prose, and
+66.0 tok/s for code. Vision and tool calling passed 7/7. This post-migration
+check did not rerun llama-benchy or tool-eval-bench, whose results below remain
+the historical measurements described above.
+
 ## llama-benchy 0.4.0
 
 The run used 2,048/4,096/8,192/16,384 prompt tokens, concurrency 1/2/4,

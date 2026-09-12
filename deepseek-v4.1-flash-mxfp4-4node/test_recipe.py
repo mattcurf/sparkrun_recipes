@@ -51,7 +51,7 @@ class DeepSeekV41RecipeTest(unittest.TestCase):
         self.assertEqual(model_path, "/srv/sparkrun/models/DeepSeek-V4.1-Flash")
         self.assertIn("{resolved_model_path}", self.recipe["command"])
         self.assertIn(
-            "/var/tmp/sparkrun-deepseek-v4.1-flash-engram:/engram-local:ro",
+            "/srv/sparkrun/engram/DeepSeek-V4.1-Flash:/engram-local:ro",
             volumes,
         )
         self.assertNotIn("/home/", tracked_text)

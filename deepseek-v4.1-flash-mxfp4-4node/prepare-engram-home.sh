@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ENGRAM_DIR="$HOME/.local/share/sparkrun/engram/DeepSeek-V4.1-Flash"
-MOUNT_SOURCE=${1:-/var/tmp/sparkrun-deepseek-v4.1-flash-engram}
+MOUNT_SOURCE=${1:-/srv/sparkrun/engram/DeepSeek-V4.1-Flash}
 
 mkdir -p "$ENGRAM_DIR"
 if [[ -L "$MOUNT_SOURCE" ]]; then
@@ -16,7 +16,16 @@ elif [[ -e "$MOUNT_SOURCE" ]]; then
   echo "Refusing to replace existing non-symlink $MOUNT_SOURCE" >&2
   exit 1
 else
-  ln -s -- "$ENGRAM_DIR" "$MOUNT_SOURCE"
+  if [[ "$MOUNT_SOURCE" == /srv/sparkrun/engram/DeepSeek-V4.1-Flash ]]; then
+    docker run --rm --entrypoint sh \
+      -v /srv:/host-srv deepseek-v4.1-flash-sparkrun-v1 \
+      -c 'mkdir -p /host-srv/sparkrun/engram && ln -s -- "$1" /host-srv/sparkrun/engram/DeepSeek-V4.1-Flash' \
+      sh "$ENGRAM_DIR"
+  else
+    # An alternate mount source is accepted only for isolated tests.
+    mkdir -p "$(dirname -- "$MOUNT_SOURCE")"
+    ln -s -- "$ENGRAM_DIR" "$MOUNT_SOURCE"
+  fi
 fi
 
 printf '%s\n' "$ENGRAM_DIR"

@@ -26,14 +26,18 @@ Engram rows always live under the SSH user's home directory on each host at
 Docker volume sources, so putting `~/...` directly in `executor_config.volumes`
 would pass a literal tilde instead of expanding the remote user's home. The setup
 script therefore creates a stable per-host symlink at
-`/var/tmp/sparkrun-deepseek-v4.1-flash-engram`, which the recipe mounts read-only
-at `/engram-local`. This avoids both control-host expansion and the container's
-root `$HOME` while keeping setup and serving paths fixed.
+`/srv/sparkrun/engram/DeepSeek-V4.1-Flash`, which the recipe mounts read-only at
+`/engram-local`. The helper creates this root-owned alias through the already
+required recipe image; Docker rejects symlinked mount sources under world-writable
+directories such as `/var/tmp`. This avoids both control-host expansion and the
+container's root `$HOME` while keeping setup and serving paths fixed.
 
 Prepare the shared checkpoint and local Engram directories from a host with
-`hf`, then name the four nodes in SparkRun rank order:
+`hf` after building the required recipe image, then name the four nodes in
+SparkRun rank order:
 
 ```bash
+./build-image.sh
 ./setup-model.sh /srv/sparkrun/models/DeepSeek-V4.1-Flash \
   <rank-0> <rank-1> <rank-2> <rank-3>
 ```
@@ -46,12 +50,12 @@ runtime safely reads those Engram rows from the shared checkpoint instead.
 
 ## Build and run
 
-Build on a node with at least 80 GB free and distribute the resulting image by
-running SparkRun. The build compiles the exact vLLM stable extension and
-FlashInfer 0.7.0rc1 SM 12.1a MXFP8 and sparse-MLA kernels with low parallelism.
+Build on a node with at least 80 GB free before running the storage setup above,
+then distribute the resulting image by running SparkRun. The build compiles the
+exact vLLM stable extension and FlashInfer 0.7.0rc1 SM 12.1a MXFP8 and sparse-MLA
+kernels with low parallelism.
 
 ```bash
-./build-image.sh
 sparkrun recipe validate deepseek-v4.1-flash-mxfp4-tp4.yaml
 sparkrun run deepseek-v4.1-flash-mxfp4-tp4.yaml --cluster <four-node-cluster>
 ```
