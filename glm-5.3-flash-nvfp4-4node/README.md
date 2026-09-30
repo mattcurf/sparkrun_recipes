@@ -60,6 +60,10 @@ in the Hugging Face cache, but budget for images, download temporary space,
 and Docker's image-export temporary files separately. A full root filesystem
 can prevent `docker save` even when the model-cache filesystem has free space.
 
+To require an API key on `/v1/*`, add `-e VLLM_API_KEY="$(cat ~/.config/vllm-api-key)"`
+to `sparkrun run`; see the [sibling API key section](../glm-5.3-flash-nvfp4-2node/README.md#api-key).
+Export the same `VLLM_API_KEY` before running the evaluation scripts.
+
 The API listens on port 8000. Served names are `GLM-5.3-Flash-NVFP4-TP4` and
 `GLM-5.3-Flash-FP8-TP4` respectively. Always bound generation with `max_tokens`
 and inspect `finish_reason`; a length stop is not a completed answer.

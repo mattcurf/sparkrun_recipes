@@ -8,10 +8,18 @@ chunk counts. Run on an otherwise idle server for meaningful comparisons.
 import argparse
 import concurrent.futures
 import json
+import os
 import re
 import time
 import urllib.request
 from pathlib import Path
+
+
+def headers():
+    """JSON headers, plus a bearer token when VLLM_API_KEY is set."""
+    key = os.environ.get("VLLM_API_KEY")
+    auth = {"Authorization": f"Bearer {key}"} if key else {}
+    return {"Content-Type": "application/json", **auth}
 
 
 def request(base, payload, timeout=240):
@@ -23,7 +31,7 @@ def request(base, payload, timeout=240):
     req = urllib.request.Request(
         base + "/v1/chat/completions",
         data=json.dumps(payload).encode(),
-        headers={"Content-Type": "application/json"},
+        headers=headers(),
     )
     done = False
     with urllib.request.urlopen(req, timeout=timeout) as response:
