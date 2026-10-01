@@ -17,10 +17,14 @@ that required its smaller pool.
 | [FP8](../glm-5.3-flash-fp8-4node/glm-5.3-flash-fp8-tp4.yaml) | `zai-org/GLM-5.3-Flash` | Native block-scaled Triton W8A8 |
 
 Both retain TP4 plus expert parallelism, allgather/reduce-scatter, native NoPE
-sparse attention, FP8 target KV, BF16 draft KV, DFlash2 with seven speculative
-tokens, chunked prefill, GLM tool/reasoning parsers, and low reasoning effort.
-Both use four sequences, 8,192-token prefill batches, CUDA graphs for the target
-and drafter, and one OpenMP thread to avoid CPU spin-wait contention. NVFP4
+sparse attention, FP8 target KV, BF16 draft KV, DFlash2, chunked prefill, GLM
+tool/reasoning parsers, and low reasoning effort. DFlash2 drafts seven tokens
+for one running request, five for two, and three for three or more
+(`num_speculative_tokens_per_batch_size`). Both use eight sequences,
+2,048-token prefill batches, CUDA graphs for the target and drafter, and one
+OpenMP thread to avoid CPU spin-wait contention. Triton, TileLang, and
+FlashInfer JIT caches are kept on SparkRun's per-model `/cache/runtime` mount.
+NVFP4 also sets `GLM_FAST_LOAD=1` for the image's fast safetensors loader. NVFP4
 reserves **12 GiB KV per GPU**; FP8 uses **8 GiB** because its larger weights
 leave less allocation headroom. These are different cache capacities at the
 same per-request context limit, not different KV precision. Additional long

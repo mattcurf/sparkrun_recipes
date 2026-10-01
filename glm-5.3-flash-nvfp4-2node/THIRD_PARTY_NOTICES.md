@@ -12,6 +12,9 @@
 - [NVIDIA Model Optimizer](https://github.com/NVIDIA/Model-Optimizer) is
   Apache-2.0 licensed and was used upstream to quantize the checkpoint.
 - [SparkRun](https://github.com/spark-arena/sparkrun) is Apache-2.0 licensed.
+- [knapcio/GLM-5.3-Flash-4x-DGX-Spark-TP4](https://github.com/knapcio/GLM-5.3-Flash-4x-DGX-Spark-TP4/tree/770d115)
+  is MIT licensed. `glm_fast_load.py` is copied from its `overlay/` directory
+  with an attribution header; see [LICENSE-MIT-knapcio](LICENSE-MIT-knapcio).
 - [LibertAI's sparse-MLA plugin](https://github.com/Libertai/vllm-sparse-mla-blackwell/tree/3701f85be073ff75578bdffb22469161223b09fc)
   is Apache-2.0 licensed. The Docker build fetches this pinned source, verifies
   its archive checksum, and compiles its native SM121 attention kernel. It

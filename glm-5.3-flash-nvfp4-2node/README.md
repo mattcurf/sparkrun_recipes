@@ -64,6 +64,10 @@ The image also includes bounded compatibility patches:
 - `patch_openai_compat.py`: chat completions treat `"tools": []` as omitted
   tools, and clamp a `max_tokens`/`max_completion_tokens` larger than the
   context remaining after the prompt instead of rejecting the request.
+- `glm_fast_load.py` (MIT, knapcio) replaces vLLM's lazy safetensors iterator
+  when `GLM_FAST_LOAD=1`: parallel `preadv` reads into reused pinned slabs,
+  yielding the same tensors in the same order. `glm_fast_load.pth` enables it
+  per process. The four-node NVIDIA recipe sets it; this recipe does not.
 
 ## Run
 
@@ -324,8 +328,9 @@ Run on an idle Spark after building the image:
 
 ```bash
 docker run --rm --gpus all --entrypoint bash \
-  -v "$PWD:/recipe:ro" glm53-flash-nvfp4-sparkrun-v3 -lc '
+  -v "$PWD:/recipe:ro" glm53-flash-nvfp4-sparkrun-v4 -lc '
     python3 /recipe/test_openai_compat.py &&
+    (cd /recipe && python3 test_fast_load.py) &&
     python3 /recipe/test_kv_layout.py &&
     python3 /recipe/test_sparse_mla.py &&
     python3 /opt/glm53-sparse-mla/tests/run_installed.py &&
@@ -348,7 +353,7 @@ docker run --rm --gpus all --shm-size 1g --entrypoint bash \
   -e HF_HUB_OFFLINE=1 -e VLLM_GLM53_CUDA_SPARSE_MLA=0 \
   -v "$PWD:/recipe:ro" \
   -v "$HOME/.cache/huggingface:/root/.cache/huggingface:ro" \
-  glm53-flash-nvfp4-sparkrun-v3 -lc '
+  glm53-flash-nvfp4-sparkrun-v4 -lc '
     python3 /recipe/test_nvidia_mtp.py && python3 /recipe/test_load_mtp.py
   '
 ```

@@ -22,3 +22,6 @@ RUN python3 /opt/glm53-sparse-mla/patch_dflash2.py \
     && python3 /opt/glm53-sparse-mla/patch_sm121.py \
     && python3 /opt/glm53-sparse-mla/patch_nvidia_mtp.py \
     && python3 /opt/glm53-sparse-mla/patch_openai_compat.py
+
+# Optional fast safetensors loader (MIT, knapcio); active only with GLM_FAST_LOAD=1.
+COPY glm_fast_load.py glm_fast_load.pth /usr/local/lib/python3.12/dist-packages/
