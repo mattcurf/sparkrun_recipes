@@ -18,8 +18,10 @@ that required its smaller pool.
 
 Both retain TP4 plus expert parallelism, allgather/reduce-scatter, native NoPE
 sparse attention, FP8 target KV, BF16 draft KV, DFlash2, chunked prefill, GLM
-tool/reasoning parsers, and low reasoning effort. DFlash2 drafts seven tokens
-for one running request, five for two, and three for three or more
+tool/reasoning parsers, and low reasoning effort. `GLM_MAX_REASONING_EFFORT=low`
+also lowers higher per-request efforts, such as an agent's `high`, to `low`.
+DFlash2 drafts seven tokens for one running request, five for two, and three
+for three or more
 (`num_speculative_tokens_per_batch_size`). Both use eight sequences,
 2,048-token prefill batches, CUDA graphs for the target and drafter, and one
 OpenMP thread to avoid CPU spin-wait contention. Triton, TileLang, and

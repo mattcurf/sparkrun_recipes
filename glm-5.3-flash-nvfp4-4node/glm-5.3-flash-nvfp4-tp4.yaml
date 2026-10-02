@@ -4,7 +4,7 @@ model: nvidia/GLM-5.3-Flash-NVFP4
 model_revision: 423acf37583782c51c142d145aef733d72943d93
 runtime: vllm-distributed
 # Built by ../glm-5.3-flash-nvfp4-2node/build-image.sh.
-container: glm53-flash-nvfp4-sparkrun-v4
+container: glm53-flash-nvfp4-sparkrun-v5
 min_nodes: 4
 max_nodes: 4
 cluster_only: true
@@ -52,6 +52,8 @@ env:
   DO_NOT_TRACK: "1"
   # Fast safetensors loader in the image (glm_fast_load.py).
   GLM_FAST_LOAD: "1"
+  # Lower requested reasoning effort above this level (patch_openai_compat.py).
+  GLM_MAX_REASONING_EFFORT: low
   # JIT caches on SparkRun's persistent per-model runtime-cache mount.
   TRITON_CACHE_DIR: /cache/runtime/triton
   TILELANG_CACHE_DIR: /cache/runtime/tilelang

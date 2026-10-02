@@ -5,7 +5,7 @@ model_revision: eb9eb208eb0d988989d07a6a12d0fdeb5f52574a
 runtime: vllm-distributed
 # Shared native NoPE and DFlash2 integration; no weight conversion.
 # Built by ../glm-5.3-flash-nvfp4-2node/build-image.sh.
-container: glm53-flash-nvfp4-sparkrun-v4
+container: glm53-flash-nvfp4-sparkrun-v5
 min_nodes: 4
 max_nodes: 4
 cluster_only: true
@@ -54,6 +54,8 @@ env:
   PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
   VLLM_NO_USAGE_STATS: "1"
   DO_NOT_TRACK: "1"
+  # Lower requested reasoning effort above this level (patch_openai_compat.py).
+  GLM_MAX_REASONING_EFFORT: low
   # JIT caches on SparkRun's persistent per-model runtime-cache mount.
   TRITON_CACHE_DIR: /cache/runtime/triton
   TILELANG_CACHE_DIR: /cache/runtime/tilelang

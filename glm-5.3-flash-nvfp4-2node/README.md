@@ -63,7 +63,11 @@ The image also includes bounded compatibility patches:
   The target's calibrated quantization configuration remains unchanged.
 - `patch_openai_compat.py`: chat completions treat `"tools": []` as omitted
   tools, and clamp a `max_tokens`/`max_completion_tokens` larger than the
-  context remaining after the prompt instead of rejecting the request.
+  context remaining after the prompt instead of rejecting the request. With
+  `GLM_MAX_REASONING_EFFORT` set to `low`, `high`, or `max`, a request's
+  `reasoning_effort` (top-level or in `chat_template_kwargs`) above that level
+  is lowered to it; the template renders values other than `low` and `high` as
+  `max`. The GLM recipes set `low`.
 - `glm_fast_load.py` (MIT, knapcio) replaces vLLM's lazy safetensors iterator
   when `GLM_FAST_LOAD=1`: parallel `preadv` reads into reused pinned slabs,
   yielding the same tensors in the same order. `glm_fast_load.pth` enables it
@@ -328,7 +332,7 @@ Run on an idle Spark after building the image:
 
 ```bash
 docker run --rm --gpus all --entrypoint bash \
-  -v "$PWD:/recipe:ro" glm53-flash-nvfp4-sparkrun-v4 -lc '
+  -v "$PWD:/recipe:ro" glm53-flash-nvfp4-sparkrun-v5 -lc '
     python3 /recipe/test_openai_compat.py &&
     (cd /recipe && python3 test_fast_load.py) &&
     python3 /recipe/test_kv_layout.py &&
@@ -339,7 +343,8 @@ docker run --rm --gpus all --entrypoint bash \
 ```
 
 `test_openai_compat.py` checks the installed chat-completion patch: empty tool
-arrays, clamped output limits, idempotent reapplication, and fail-closed drift.
+arrays, clamped output limits, the reasoning-effort cap, idempotent
+reapplication, and fail-closed drift.
 The local regression exercises the installed backend and metadata builder,
 including the full kpool tail and fully masked rows, against an FP32 reference.
 The upstream suites additionally cover masking, duplicate indices, extreme
@@ -353,7 +358,7 @@ docker run --rm --gpus all --shm-size 1g --entrypoint bash \
   -e HF_HUB_OFFLINE=1 -e VLLM_GLM53_CUDA_SPARSE_MLA=0 \
   -v "$PWD:/recipe:ro" \
   -v "$HOME/.cache/huggingface:/root/.cache/huggingface:ro" \
-  glm53-flash-nvfp4-sparkrun-v4 -lc '
+  glm53-flash-nvfp4-sparkrun-v5 -lc '
     python3 /recipe/test_nvidia_mtp.py && python3 /recipe/test_load_mtp.py
   '
 ```

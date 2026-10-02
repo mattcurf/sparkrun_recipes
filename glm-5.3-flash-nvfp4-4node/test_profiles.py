@@ -42,6 +42,7 @@ class ProfilesTest(unittest.TestCase):
                 self.assertIn("--enable-chunked-prefill", profile["command"])
                 self.assertEqual(defaults["execution_flags"], "--no-enforce-eager")
                 self.assertEqual(profile["env"]["OMP_NUM_THREADS"], "1")
+                self.assertEqual(profile["env"]["GLM_MAX_REASONING_EFFORT"], "low")
                 expected_kv_gib = 12 if profile["model"].startswith("nvidia/") else 8
                 self.assertEqual(
                     defaults["kv_cache_memory_bytes"], expected_kv_gib * 2**30
