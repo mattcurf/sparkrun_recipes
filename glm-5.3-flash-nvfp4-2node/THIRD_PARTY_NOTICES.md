@@ -6,8 +6,8 @@
 - [vLLM](https://github.com/vllm-project/vllm) is Apache-2.0 licensed. This recipe
   references its published ARM64 container; bundled components retain their
   respective licenses. `patch_dflash2.py`, `patch_sm121.py`,
-  `patch_nvidia_mtp.py`, and the source-overlay tests contain/adapt vLLM source
-  excerpts and retain Apache-2.0 licensing.
+  `patch_nvidia_mtp.py`, `patch_openai_compat.py`, and the source-overlay tests
+  contain/adapt vLLM source excerpts and retain Apache-2.0 licensing.
   Copyright contributors to the vLLM project.
 - [NVIDIA Model Optimizer](https://github.com/NVIDIA/Model-Optimizer) is
   Apache-2.0 licensed and was used upstream to quantize the checkpoint.

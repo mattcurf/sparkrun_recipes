@@ -61,6 +61,9 @@ The image also includes bounded compatibility patches:
   quantization configuration rather than inheriting the NVFP4 target's.
   `patch_nvidia_mtp.py` pins this adaptation to the verified NVIDIA revision.
   The target's calibrated quantization configuration remains unchanged.
+- `patch_openai_compat.py`: chat completions treat `"tools": []` as omitted
+  tools, and clamp a `max_tokens`/`max_completion_tokens` larger than the
+  context remaining after the prompt instead of rejecting the request.
 
 ## Run
 
@@ -91,6 +94,22 @@ launches took approximately 17–20 minutes with the checkpoint already cached.
 When replacing another model, stop it first. If unified memory remains retained,
 the repository's `../tools/cleanup-memory.sh` can reclaim it on explicitly named
 nodes before launch. Do not run memory cleanup against active inference jobs.
+
+### API key
+
+Pass a key at launch to require `Authorization: Bearer <key>` on `/v1/*`:
+
+```bash
+umask 077; openssl rand -hex 32 > ~/.config/vllm-api-key   # once
+sparkrun run glm-5.3-flash-nvfp4.yaml --cluster <two-node-cluster> \
+  -e VLLM_API_KEY="$(cat ~/.config/vllm-api-key)"
+```
+
+`/health` and `/metrics` remain unauthenticated. The key is visible in
+`docker inspect` on each node and in SparkRun's owner-only job record under
+`~/.cache/sparkrun/jobs/`. `benchmark.py` and `../glm-5.3-flash-nvfp4-4node/evaluate.py`
+send it when `VLLM_API_KEY` is set in their environment. Without `-e VLLM_API_KEY`,
+the API is unauthenticated.
 
 ## Decoding and backend comparisons
 
@@ -254,6 +273,7 @@ checks do not establish general model quality or an EXL3 speed comparison.
 ## Verify after deployment
 
 ```bash
+# With an API key, add: -H "Authorization: Bearer $VLLM_API_KEY" to /v1 requests.
 curl -f http://<head-node>:8000/health
 curl -fsS http://<head-node>:8000/v1/models
 curl --fail-with-body http://<head-node>:8000/v1/chat/completions \
@@ -304,7 +324,8 @@ Run on an idle Spark after building the image:
 
 ```bash
 docker run --rm --gpus all --entrypoint bash \
-  -v "$PWD:/recipe:ro" glm53-flash-nvfp4-sparkrun-v2 -lc '
+  -v "$PWD:/recipe:ro" glm53-flash-nvfp4-sparkrun-v3 -lc '
+    python3 /recipe/test_openai_compat.py &&
     python3 /recipe/test_kv_layout.py &&
     python3 /recipe/test_sparse_mla.py &&
     python3 /opt/glm53-sparse-mla/tests/run_installed.py &&
@@ -312,6 +333,8 @@ docker run --rm --gpus all --entrypoint bash \
   '
 ```
 
+`test_openai_compat.py` checks the installed chat-completion patch: empty tool
+arrays, clamped output limits, idempotent reapplication, and fail-closed drift.
 The local regression exercises the installed backend and metadata builder,
 including the full kpool tail and fully masked rows, against an FP32 reference.
 The upstream suites additionally cover masking, duplicate indices, extreme
@@ -325,7 +348,7 @@ docker run --rm --gpus all --shm-size 1g --entrypoint bash \
   -e HF_HUB_OFFLINE=1 -e VLLM_GLM53_CUDA_SPARSE_MLA=0 \
   -v "$PWD:/recipe:ro" \
   -v "$HOME/.cache/huggingface:/root/.cache/huggingface:ro" \
-  glm53-flash-nvfp4-sparkrun-v2 -lc '
+  glm53-flash-nvfp4-sparkrun-v3 -lc '
     python3 /recipe/test_nvidia_mtp.py && python3 /recipe/test_load_mtp.py
   '
 ```

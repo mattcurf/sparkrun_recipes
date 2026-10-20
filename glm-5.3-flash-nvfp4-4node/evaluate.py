@@ -14,9 +14,11 @@ import time
 import urllib.request
 from pathlib import Path
 
-REQUEST = runpy.run_path(
+BENCHMARK = runpy.run_path(
     str(Path(__file__).resolve().parents[1] / "glm-5.3-flash-nvfp4-2node/benchmark.py")
-)["request"]
+)
+REQUEST = BENCHMARK["request"]
+HEADERS = BENCHMARK["headers"]
 
 
 def retrieval_prompt():
@@ -167,7 +169,7 @@ def main():
     req = urllib.request.Request(
         args.base + "/v1/chat/completions",
         data=json.dumps(tool_payload).encode(),
-        headers={"Content-Type": "application/json"},
+        headers=HEADERS(),
     )
     with urllib.request.urlopen(req, timeout=120) as response:
         reply = json.load(response)
