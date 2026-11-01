@@ -5,6 +5,31 @@ functional and near-256K checks. NVFP4 was faster on the tested workloads and
 left substantially more memory available. This is not a general model-quality
 comparison or a claim that every FP8 backend has been optimized.
 
+## 2026-09-30 serving update (NVFP4, image `v4`)
+
+Changes from the profile below: `max_num_batched_tokens` 8,192 → 2,048,
+`max_num_seqs` 4 → 8, batch-size draft schedule `[[1,1,7],[2,2,5],[3,8,3]]`,
+persistent JIT caches, and `GLM_FAST_LOAD=1`. Same cluster, checkpoint, and
+`VLLM_API_KEY`; measured on an idle service with the scripts in
+`../glm-5.3-flash-nvfp4-2node/benchmark.py` plus ad-hoc concurrency and
+interference probes.
+
+| Measurement | Before | After |
+| --- | --- | --- |
+| Weight load (rank 0) | 402.7 s | 22.8 s |
+| Launch to `/health` (image already distributed) | ~11.5 min | ~4.9 min |
+| First 4-request batch after boot, TTFT | 5.2 s | 0.4 s |
+| Single stream, 384 tokens, greedy / temperature 1 | 56.5 / 53.7 tok/s | 59.5 / 60.8 tok/s |
+| 4 streams aggregate, greedy / temperature 1 | 94.0 / 93.6 tok/s | 100.0 / 92.6 tok/s |
+| 8 streams aggregate, temperature 1 | queued at 4 | 132.6 tok/s |
+| Cold prefill alone, 25K–50K tokens | ~2,880 tok/s | ~2,220 tok/s |
+| Decode steps/s while a 50K prefill runs | 0.64 (max gap 2.8 s) | 2.02 (max gap 0.71 s) |
+
+Drafted tokens per verification step were 7.00, 3.28, and 3.04 at one, four,
+and eight streams. The 2,048-token batches cost about 23% cold-prefill
+throughput in exchange for a 4× shorter worst-case decode stall during
+concurrent prefill.
+
 ## Controlled setup
 
 Four DGX Sparks on the saved `gb` cluster, switched dual-rail RoCE, one rank per

@@ -4,7 +4,7 @@ model: nvidia/GLM-5.3-Flash-NVFP4
 model_revision: 423acf37583782c51c142d145aef733d72943d93
 runtime: vllm-distributed
 # Pinned NVIDIA image plus a native NoPE sparse-attention plugin (Dockerfile).
-container: glm53-flash-nvfp4-sparkrun-v3
+container: glm53-flash-nvfp4-sparkrun-v5
 min_nodes: 2
 max_nodes: 2
 cluster_only: true
@@ -60,6 +60,8 @@ env:
   PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
   VLLM_NO_USAGE_STATS: "1"
   DO_NOT_TRACK: "1"
+  # Lower requested reasoning effort above this level (patch_openai_compat.py).
+  GLM_MAX_REASONING_EFFORT: low
 
 command: |
   vllm serve {model} \
