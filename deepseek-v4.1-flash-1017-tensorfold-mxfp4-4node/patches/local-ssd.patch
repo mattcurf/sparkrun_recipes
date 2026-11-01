@@ -1,0 +1,323 @@
+diff --git a/scripts/config.sh b/scripts/config.sh
+index 4269776..d3049a0 100644
+--- a/scripts/config.sh
++++ b/scripts/config.sh
+@@ -99,6 +99,8 @@ CONTAINER_NAME="${CONTAINER_NAME:-dsv41-1017-tf}"   # the same name on every Spa
+ SERVED_NAME="${SERVED_NAME:-DeepSeek-V4.1-Flash-1017}"
+ HOST="${HOST:-0.0.0.0}"
+ PORT="${PORT:-8888}"
++# Optional existing bearer key, mounted read-only on the head; never put the key in arguments or logs.
++API_KEY_FILE="${API_KEY_FILE:-}"
+ # A request's positions at most (prompt and reply), and the positions all requests share (the streams' extents in one
+ # pool). The model's window is 1,048,576 tokens.
+ CONTEXT="${CONTEXT:-1048576}"
+@@ -216,7 +218,8 @@ prepared_state() {
+   f=("model=$MODEL_ID@$(snapshot_rev)" "image=$(image_ident "$IMAGE")" "kit=$KIT_REF" "order=$ORDER" "engram=$WORKER_ENGRAM_DIR" "ablit=$ABLIT")
+   [[ "$ENGRAM_PACKED" != 1 ]] || f+=("packed=$ENGRAM_PACKED_DIR/$(packed_nodes)")
+   f+=("hf=$HF_CACHE" "nfs_path=$NFS_PATH" "nfs_volume=$NFS_VOLUME" "template=$tpl")
+-  for i in 1 2 3; do f+=("w$i=$(worker_host "$i")" "nfs$i=$(wval NFS_SERVER "$i")"); done
++  f+=("storage=local-ssd-v1")
++  for i in 1 2 3; do f+=("w$i=$(worker_host "$i")" "nfs$i=$(wval NFS_SERVER "$i")" "cache$i=$(worker_cache "$i")"); done
+   (export LC_ALL=C; printf '%q ' "${f[@]}"; echo)   # (a subshell: the caller's locale is left as it was)
+ }
+ # prepare.sh's last step: computed first and swapped in whole, so a failure leaves the previous marker as it was
+diff --git a/scripts/nodes.sh b/scripts/nodes.sh
+index fecc496..3420d87 100644
+--- a/scripts/nodes.sh
++++ b/scripts/nodes.sh
+@@ -11,6 +11,8 @@
+ wvar() { if (( $2 == 1 )); then echo "$1"; else echo "$1$2"; fi; }
+ wval() { local v; v=$(wvar "$1" "$2"); echo "${!v:-}"; }
+ worker_host() { wval WORKER "$1"; }
++# Local-SSD deployment: the worker's cache is a bind mount, never an NFS volume.
++worker_cache() { local p; p=$(wval WORKER_HF_CACHE "$1"); echo "${p:-$HF_CACHE}"; }
+ # The workers this start uses (1 .. TP-1), and every worker configured at all (stop.sh stops them all).
+ worker_ids() { seq 1 $((TP - 1)); }
+ configured_workers() { local i; for i in 1 2 3; do [[ -z "$(worker_host "$i")" ]] || echo "$i"; done; }
+diff --git a/scripts/prepare.sh b/scripts/prepare.sh
+index e5bf79c..9a3f60e 100755
+--- a/scripts/prepare.sh
++++ b/scripts/prepare.sh
+@@ -1,6 +1,6 @@
+ #!/usr/bin/env bash
+ # Prepare the four Sparks to serve deepseek-ai/DeepSeek-V4.1-Flash-1017 with TensorFold's native engine. Everything
+-# lands on this Spark (spark1); the workers read it over NFS:
++# lands on this Spark (spark1), then is copied over SSH to each worker's local SSD:
+ #   1. preflight: docker and the GPU on every Spark, key-based ssh, the links (a switch, or a ring in rank order)
+ #   2. the engine image on this Spark (zig/Dockerfile: BertholomusAI's TensorFold fork at TF_REF plus zig/patches, on
+ #      BASE_IMAGE), then on each worker (docker save | docker load: only what it lacks is stored)
+@@ -10,8 +10,8 @@
+ #   5. Engram's token map and the four nodes' weight files (one each, ~80 GB) from the checkpoint, no GPU, and the
+ #      folder rank 0 serves: the checkpoint's files linked, beside model/chat_template.jinja (the release ships its
+ #      chat format as encoding/encoding.py, which the server cannot run)
+-#   6. a read-only NFS volume of this Spark's HF_CACHE on each worker, checked: every file a rank reads, by size
+-#   7. Engram's tables on each worker's disk, or with ENGRAM_PACKED=1 each Spark's packed shards (tf-dsv41-engram-pack)
++#   6. local checkpoint, kit and the worker's own weight file, checked: every file a rank reads, by size
++#   7. with ENGRAM_PACKED=1 each Spark's packed shards (tf-dsv41-engram-pack); otherwise use the local checkpoint
+ # ./start.sh runs this by itself when needed. Safe to re-run: every step skips work that is already done.
+ # Pass --rebuild to rebuild the image from scratch.
+ set -euo pipefail
+@@ -44,7 +44,7 @@ for i in 1 2 3; do
+ done
+ detect_links
+ log "Fabric: $FABRIC (2D nodes by NCCL rank: $(node_order))"
+-for i in 1 2 3; do log "  worker $i ($(worker_host "$i")): link ${LINK_HEAD_ADDR[i]:-?} <-> ${LINK_WORKER_ADDR[i]:-?}; NFS from $(nfs_server "$i")"; done
++for i in 1 2 3; do log "  worker $i ($(worker_host "$i")): link ${LINK_HEAD_ADDR[i]:-?} <-> ${LINK_WORKER_ADDR[i]:-?}; local cache $(worker_cache "$i")"; done
+ 
+ # ---------------------------------------------------------------- 2. the image
+ hash=$(image_hash)
+@@ -138,7 +138,7 @@ for g in 0 1 2 3; do
+   # the file the engine looks for: its name carries the index's hash (tf-dsv41-rank-cache --index-only)
+   want=$(in_hf --entrypoint bash "$IMAGE" -c "tf-dsv41-rank-cache $SNAP_C /tmp/x $g 4 --parity --index-only | sha256sum | cut -c1-20")
+   if [[ -f "$DATA_DIR/rank-cache/rank${g}of4-$want.bin" ]]; then log "Weight file of node $g: ready"; continue; fi
+-  rm -f "$DATA_DIR/rank-cache/rank${g}of4-"*.bin "$DATA_DIR/rank-cache/.rank${g}of4.partial"
++  # Preserve older weight files; never delete model data to prepare this deployment.
+   log "Weight file of node $g from the checkpoint (~80 GB, a few minutes)"
+   in_hf --entrypoint tf-dsv41-rank-cache "$IMAGE" "$SNAP_C" "/hf/$DATA_SUB/rank-cache" "$g" 4 --parity >/dev/null
+ done
+@@ -157,25 +157,30 @@ rm -rf "$VIEW" && mv "$VIEW.new" "$VIEW"
+ [[ -s "$VIEW/config.json" ]] || die "the served folder $VIEW does not reach the checkpoint"
+ log "Served folder: $VIEW (the checkpoint linked, the recipe's chat template)"
+ 
+-# ---------------------------------------------------------------- 6. the workers' NFS volumes
+-manifest() {  # the files a rank reads, with their sizes, as paths under HF_CACHE
+-  (cd "$HF_CACHE" && find -L "hub/models--${MODEL_ID//\//--}/snapshots/$(snapshot_rev)" "$DATA_SUB" "$KIT_SUB/kit" \
+-     -path '*/.git' -prune -o -type f -printf '%p %s\n' | LC_ALL=C sort)
++# ---------------------------------------------------------------- 6. the workers' local SSD caches (no NFS)
++manifest() {  # cache root, snapshot path, data path, kit path, 2D node
++  (cd "$1" && find -L "$2" "$3" "$4/kit" \
++     -path '*/.git' -prune -o -type f -printf '%p %s\n') |
++    awk -v node="$5" '$1 !~ /\/rank-cache\/rank[0-3]of4-/ || $1 ~ ("/rank-cache/rank" node "of4-")' | LC_ALL=C sort
+ }
+-want=$(manifest)
++SNAP_REL="hub/models--${MODEL_ID//\//--}/snapshots/$(snapshot_rev)"
++IFS=, read -r -a ord <<<"$(node_order)"
+ for i in 1 2 3; do
+-  ensure_nfs_volume "$i"
+-  if ! out=$(worker_nfs "$i" true 2>&1); then
+-    die "$(worker_host "$i") cannot mount this Spark's :$NFS_PATH from $(nfs_server "$i") over NFS ($NFS_VOLUME): $(tail -1 <<<"$out")
+-    This Spark must export HF_CACHE (as $NFS_PATH) read-only to that worker's address on its link (README: NFS)"
+-  fi
+-  have=$(worker "$i" "docker run --rm --network none -v '$NFS_VOLUME:/hf:ro' -w /hf --entrypoint find '$BASE_IMAGE' -L 'hub/models--${MODEL_ID//\//--}/snapshots/$(snapshot_rev)' '$DATA_SUB' '$KIT_SUB/kit' -path '*/.git' -prune -o -type f -printf '%p %s\n'" 2>/dev/null | LC_ALL=C sort || true)
++  cache=$(worker_cache "$i"); host=$(worker_host "$i"); node=${ord[i]}
++  worker "$i" "mkdir -p '$cache/hub/models--${MODEL_ID//\//--}' '$cache/$DATA_SUB' '$cache/$KIT_SUB'"
++  log "Copying checkpoint, kit and node $node's weight file to $host's local SSD (resumable SSH transfer)"
++  rsync -a --partial "$(model_cache_dir)/" "$host:$cache/hub/models--${MODEL_ID//\//--}/"
++  rsync -a --partial "$KIT_DIR/" "$host:$cache/$KIT_SUB/"
++  rsync -a --partial --include="/rank-cache/rank${node}of4-*.bin" --exclude='/rank-cache/*.bin' \
++    "$DATA_DIR/" "$host:$cache/$DATA_SUB/"
++  want=$(manifest "$HF_CACHE" "$SNAP_REL" "$DATA_SUB" "$KIT_SUB" "$node")
++  have=$(worker "$i" "$(declare -f manifest); manifest '$cache' '$SNAP_REL' '$DATA_SUB' '$KIT_SUB' '$node'")
+   [[ "$have" == "$want" ]] || { diff <(printf '%s\n' "$want") <(printf '%s\n' "$have") | head -10 >&2
+-    die "$(worker_host "$i") does not see every file over NFS ($NFS_VOLUME)"; }
+-  log "Worker $i ($(worker_host "$i")) reads the checkpoint, its weight file and the kit over NFS"
++    die "$host's local cache is incomplete"; }
++  log "Worker $i ($host) reads the checkpoint, its weight file and the kit from local SSD"
+ done
+ 
+-# ---------------------------------------------------------------- 7. Engram's tables on each worker's disk
++# ---------------------------------------------------------------- 7. optional packed Engram tables (the local checkpoint already has the stock tables)
+ SNAP_REL="hub/models--${MODEL_ID//\//--}/snapshots/$(snapshot_rev)"
+ read -r -a shards <<<"$(engram_shards)"
+ (( ${#shards[@]} )) || die "the checkpoint's index names no Engram tables"
+@@ -200,7 +205,7 @@ if [[ "$ENGRAM_PACKED" == 1 ]]; then
+       have=$(worker "$r" "s=0; for f in $ENGRAM_PACKED_DIR/engram-l*-n${node}of${nodes}.tfe; do [[ -f \$f ]] && s=\$(( s + \$(stat -c %s \$f) )); done; echo \$s")
+       free=$(worker "$r" "mkdir -p $ENGRAM_PACKED_DIR && df -B1 --output=avail $ENGRAM_PACKED_DIR | tail -1")
+       where=$(worker_host "$r")
+-      run() { worker "$r" "$pack -v '$NFS_VOLUME:/hf:ro' -v $ENGRAM_PACKED_DIR:/out --entrypoint tf-dsv41-engram-pack '$IMAGE' '$SNAP_C' /out $node $nodes"; }
++      run() { worker "$r" "$pack -v '$(worker_cache "$r"):/hf:ro' -v $ENGRAM_PACKED_DIR:/out --entrypoint tf-dsv41-engram-pack '$IMAGE' '$SNAP_C' /out $node $nodes"; }
+     fi
+     if (( have >= pneed )); then log "Rank $r ($where): Engram's packed shards of node $node of $nodes on its disk"; continue; fi
+     (( free + have > pneed + 10 * 1024 ** 3 )) || die "$where has $(( free / 1024 ** 3 )) GiB free: Engram's packed shards need $(( pneed / 1024 ** 3 )) GiB (ENGRAM_PACKED_DIR) and 10 GiB to spare"
+@@ -208,16 +213,6 @@ if [[ "$ENGRAM_PACKED" == 1 ]]; then
+     run >/dev/null || die "packing Engram's shards on $where failed"
+   done
+ fi
+-for i in 1 2 3; do
+-  [[ "$ENGRAM_PACKED" != 1 ]] || break
+-  have=$(worker "$i" "d=$WORKER_ENGRAM_DIR; s=0; for f in ${shards[*]}; do [[ -f \$d/\$f ]] && s=\$(( s + \$(stat -c %s \$d/\$f) )); done; echo \$s")
+-  if [[ "$have" == "$need" ]]; then log "Worker $i ($(worker_host "$i")): Engram tables on its disk"; continue; fi
+-  free=$(worker "$i" "mkdir -p $WORKER_ENGRAM_DIR && df -B1 --output=avail $WORKER_ENGRAM_DIR | tail -1")
+-  (( free + have > need + 10 * 1024 ** 3 )) || die "$(worker_host "$i") has $(( free / 1024 ** 3 )) GiB free: Engram's tables need $(( need / 1024 ** 3 )) GiB on its disk (WORKER_ENGRAM_DIR) and 10 GiB to spare"
+-  log "Worker $i ($(worker_host "$i")): copying Engram's tables to its disk ($(( need / 1024 ** 3 )) GiB over NFS, once)"
+-  worker "$i" "docker run --rm --network none --user \$(id -u):\$(id -g) -v '$NFS_VOLUME:/hf:ro' -v $WORKER_ENGRAM_DIR:/out --entrypoint bash '$BASE_IMAGE' -c 'for f in ${shards[*]}; do cp /hf/$SNAP_REL/\$f /out/\$f.part && mv /out/\$f.part /out/\$f || exit 1; done'" ||
+-    die "copying Engram's tables to $(worker_host "$i") failed"
+-done
+ 
+ write_prepared_marker || die "cannot record the prepared state (the previous marker is left as it was): see the error above"
+ log "Done: all 4 Sparks are ready. Start the server with ./start.sh (port $PORT)."
+diff --git a/start.sh b/start.sh
+index a59a9a7..f62a157 100755
+--- a/start.sh
++++ b/start.sh
+@@ -1,9 +1,9 @@
+ #!/usr/bin/env bash
+ # Serve DeepSeek-V4.1-Flash-1017 (deepseek-ai's own FP8 / MXFP4 release) on four DGX Sparks on a switch with TensorFold's
+ # native engine (four Sparks cabled as a ring without a switch: ./start-switchless.sh, the same script), end to end: runs scripts/prepare.sh when the image, the checkpoint, the weight files, the kit or the workers'
+-# NFS volumes are not ready yet (the first run, or after the patches change), starts ranks 3, 2 and 1 on the workers and
++# local SSD caches are not ready yet (the first run, or after the patches change), starts ranks 3, 2 and 1 on the workers and
+ # rank 0 here, which serves the API on port 8888, waits until the OpenAI API answers, then runs a smoke test. Every
+-# Spark reads the weights from this one over NFS. Stop it with ./stop.sh.
++# Spark reads its own local SSD copy of the weights. Stop it with ./stop.sh.
+ #
+ # Usage: ./start.sh [restart] [extra tensorfold-native serve args]
+ #   ./start.sh                  # scripts/config.sh's defaults (16 requests at once, a 1,048,576-token window, drafts,
+@@ -15,7 +15,7 @@
+ # Setup: WORKER, WORKER2, WORKER3 (ssh targets, key-based) in scripts/local.sh: on a ring in its order.
+ # Settings, from the environment, scripts/local.sh or ./.env (defaults and their notes in scripts/config.sh):
+ #   serving  CONTEXT, POOL, PARALLEL, ROUND_ROWS, MAX_TOKENS, THINKING, REASONING_EFFORT, TEMPERATURE, TOP_P, TOP_K, DRAFTS, VISION, SERVED_NAME,
+-#            HOST, PORT, RDMA, GRAPHS, SIDE, PREFETCH, ENGRAM_AIO, ENGRAM_PACKED, ENGRAM_OWNED, ENGRAM_CACHE_MIB,
++#            HOST, PORT, API_KEY_FILE, RDMA, GRAPHS, SIDE, PREFETCH, ENGRAM_AIO, ENGRAM_PACKED, ENGRAM_OWNED, ENGRAM_CACHE_MIB,
+ #            ENGRAM_INSTREAM, ROUND_MS, DRAFT_MS, SERVED_K
+ #   nodes    WORKER, WORKER2, WORKER3, FABRIC_PEER*, MASTER_ADDR, MASTER_PORT, SOCKET_IFNAME, ORDER, NCCL_CHANNELS,
+ #            NCCL_DEBUG
+@@ -47,6 +47,7 @@ for v in CONTEXT POOL PARALLEL ROUND_ROWS MAX_TOKENS; do [[ "${!v}" =~ ^[1-9][0-
+ for v in THINKING DRAFTS VISION RDMA GRAPHS SIDE PREFETCH ENGRAM_AIO ENGRAM_PACKED ENGRAM_OWNED ENGRAM_INSTREAM; do [[ "${!v}" =~ ^[01]$ ]] || die "$v is 0 or 1, not ${!v}"; done
+ [[ "$ENGRAM_CACHE_MIB" =~ ^[0-9]+$ ]] || die "ENGRAM_CACHE_MIB is a count of MiB, not $ENGRAM_CACHE_MIB"
+ [[ "$ENGRAM_INSTREAM" == 0 || ( "$ENGRAM_PACKED" == 1 && "$ENGRAM_AIO" == 1 ) ]] || die "ENGRAM_INSTREAM=1 needs ENGRAM_PACKED=1 and ENGRAM_AIO=1"
++[[ -z "$API_KEY_FILE" || ( -r "$API_KEY_FILE" && -s "$API_KEY_FILE" ) ]] || die "API_KEY_FILE must be a readable, nonempty existing key file"
+ check_workers
+ 
+ B=$'\033[1m'; M=$'\033[1;35m'; G=$'\033[1;32m'; D=$'\033[2m'; R=$'\033[0m'
+@@ -68,6 +69,13 @@ need_workers
+ 
+ API_HOST="$HOST"; [[ "$HOST" == 0.0.0.0 || "$HOST" == "::" ]] && API_HOST=127.0.0.1
+ URL="http://$API_HOST:$PORT"
++api_curl() {
++  if [[ -n "$API_KEY_FILE" ]]; then
++    curl -H @<(printf 'Authorization: Bearer %s\n' "$(<"$API_KEY_FILE")") "$@"
++  else
++    curl "$@"
++  fi
++}
+ running_here()   { [[ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null)" == true ]]; }
+ running_worker() { [[ "$(worker "$1" docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null)" == true ]]; }
+ all_running() { local i; running_here || return 1; for i in 1 2 3; do running_worker "$i" || return 1; done; }
+@@ -77,7 +85,7 @@ if (( ! DRY )) && [[ "$MODE" == start ]] && all_running; then
+ fi
+ 
+ # ---------------------------------------------------------------- 1. setup
+-step 1 "Setup: image, checkpoint, weight files and kit on spark1; NFS volumes on the workers"
++step 1 "Setup: image, checkpoint, weight files and kit; local SSD caches on the workers"
+ need_prepare=0
+ case "${PREPARE:-auto}" in
+   1) need_prepare=1 ;;
+@@ -104,7 +112,7 @@ detect_links
+ NODE_ORDER=$(node_order)
+ log "Fabric: $FABRIC; rendezvous $MASTER_ADDR:$MASTER_PORT; 2D nodes by NCCL rank: $NODE_ORDER"
+ for r in 0 1 2 3; do
+-  log "  rank $r ($( (( r == 0 )) && echo this node || worker_host "$r")): RoCE ${NODE_HCAS[r]} (GID ${NODE_GID[r]:-per device})$( (( r == 0 )) || echo ", NFS from ${LINK_HEAD_ADDR[r]:-?}")"
++  log "  rank $r ($( (( r == 0 )) && echo this node || worker_host "$r")): RoCE ${NODE_HCAS[r]} (GID ${NODE_GID[r]:-per device}); local SSD weights"
+ done
+ if (( ! DRY )); then
+   if running_here || running_worker 1 || running_worker 2 || running_worker 3; then ./stop.sh; fi
+@@ -112,15 +120,15 @@ if (( ! DRY )); then
+   for i in 1 2 3; do worker "$i" "docker rm -f '$CONTAINER_NAME' >/dev/null 2>&1; true"; done
+   if ss -ltn "sport = :$PORT" 2>/dev/null | grep -q LISTEN; then die "port $PORT is already in use: $(ss -ltnp "sport = :$PORT" 2>/dev/null | tail -n +2)"; fi
+   here_gb=$(free -g | awk '/^Mem:/ {print $7}')
+-  (( here_gb >= 100 )) || warn "only ${here_gb} GiB memory available here: the weights take ~75 GiB a Spark, the caches the rest"
++  (( here_gb >= 100 )) || die "only ${here_gb} GiB available here; reclaim memory before starting inference"
+   for i in 1 2 3; do
+     g=$(worker "$i" "free -g | awk '/^Mem:/ {print \$7}'" 2>/dev/null || echo 0)
+-    (( g >= 100 )) || warn "only ${g} GiB memory available on $(worker_host "$i"): stop other GPU work there"
++    (( g >= 100 )) || die "only ${g} GiB available on $(worker_host "$i"); reclaim memory before starting inference"
+   done
+ fi
+ 
+ # ---------------------------------------------------------------- 3. launch
+-# What every rank's engine reads (HF_CACHE at /hf: this Spark's own, the workers' over NFS)
++# What every rank's engine reads (its own local HF_CACHE at /hf)
+ ENGINE_ENV=(TF_DS_2D_GU=parity "TF_DS_2D_ORDER=$NODE_ORDER" "TF_DS_ROUND_ROWS=$ROUND_ROWS" "TF_DS_STREAMS=$PARALLEL" "TF_DS_SERVED_K=$SERVED_K"
+             "TF_DS_WINDOW=$POOL" "TF_DS_GRAPHS=$GRAPHS" "TF_DS_HC_SIDE=$SIDE" "TF_DS_L2_PREFETCH=$PREFETCH" "TF_DS_ENGRAM_AIO=$ENGRAM_AIO"
+             "TF_DS_ROUND_MS=$ROUND_MS" "TF_DS_DRAFT_MS=$DRAFT_MS" "HF_HUB_OFFLINE=$HF_HUB_OFFLINE")
+@@ -138,17 +146,14 @@ FOLLOW="--pool $POOL --context $CONTEXT --engram $MODEL_ARG --token-map $DATA/ds
+ FOLLOW+=" --graphs $GRAPHS --side $SIDE --prefetch $PREFETCH --aio $ENGRAM_AIO"
+ step 3 "Launch: container $CONTAINER_NAME, ranks 3 to 1 on the workers, then rank 0 here"
+ for i in 3 2 1; do
+-  # Engram's tables from the worker's own disk (prepare.sh), the rest over NFS; with packed shards the tables' headers
+-  # come over NFS and the rows from the shards on the worker's disk
++  # All inputs, including Engram's tables, are on the worker's own SSD.
++  cmd="tf-dsv41-lanes $MODEL_ARG $DATA/rank-cache $i 4 ${LINK_HEAD_ADDR[i]:-$MASTER_ADDR} $MASTER_PORT $KIT $FOLLOW"
++  engram_mount=""
+   if [[ "$ENGRAM_PACKED" == 1 ]]; then
+-    cmd="tf-dsv41-lanes $MODEL_ARG $DATA/rank-cache $i 4 ${LINK_HEAD_ADDR[i]:-$MASTER_ADDR} $MASTER_PORT $KIT $FOLLOW"
+     engram_mount="-v $ENGRAM_PACKED_DIR:/engram-packed:ro"
+-  else
+-    cmd="tf-dsv41-lanes $MODEL_ARG $DATA/rank-cache $i 4 ${LINK_HEAD_ADDR[i]:-$MASTER_ADDR} $MASTER_PORT $KIT ${FOLLOW/--engram $MODEL_ARG/--engram /engram}"
+-    engram_mount="-v $WORKER_ENGRAM_DIR:/engram:ro"
+   fi
+   [[ "$RDMA" == 0 ]] || cmd+=" --rdma ${NODE_HCAS[i]}"   # this node's RoCE devices
+-  remote="mkdir -p \$HOME/.cache/dsv41-tensorfold && docker run -d --name $CONTAINER_NAME $RUN_ARGS -v $NFS_VOLUME:/hf:ro $engram_mount $(envs "${ENGINE_ENV[@]}") $(rank_nccl_env "$i") $IMAGE $cmd"
++  remote="mkdir -p \$HOME/.cache/dsv41-tensorfold && docker run -d --name $CONTAINER_NAME $RUN_ARGS -v '$(worker_cache "$i"):/hf:ro' $engram_mount $(envs "${ENGINE_ENV[@]}") $(rank_nccl_env "$i") $IMAGE $cmd"
+   if (( DRY )); then printf '[dry-run] rank %s on %s:\n  %s\n' "$i" "$(worker_host "$i")" "$remote"; continue; fi
+   log "Rank $i on $(worker_host "$i"): $cmd"
+   worker "$i" "$remote" >/dev/null || die "could not start rank $i on $(worker_host "$i")"
+@@ -160,12 +165,15 @@ ENV0=(TF_TP_WORLD=4 "TF_TP_MASTER=$MASTER_ADDR" "TF_TP_LISTEN=$LISTEN" "TF_TP_PO
+       "TENSORFOLD_CUDA_KERNELS=$KIT/aot" "TF_DS_ENGRAM=$MODEL_ARG" "TF_DS_TOKEN_MAP=$DATA/dsv41_token_map.json")
+ SERVE=(tensorfold-native serve "$(served_in_container)" --backend cuda --host "$HOST" --port "$PORT" --name "$SERVED_NAME"
+        --context "$CONTEXT" --parallel "$PARALLEL" --max-tokens "$MAX_TOKENS" --temperature "$TEMPERATURE" --top-p "$TOP_P" --top-k "$TOP_K")
++[[ "$SERVED_NAME" == DeepSeek-V4.1-Flash-1017 ]] || SERVE+=(--alias DeepSeek-V4.1-Flash-1017)
++[[ -z "$API_KEY_FILE" ]] || SERVE+=(--api-key-file /run/secrets/model-api-key --metrics-open)
+ if [[ "$THINKING" == 1 ]]; then SERVE+=(--thinking); else SERVE+=(--no-thinking); fi
+ [[ -z "$REASONING_EFFORT" ]] || SERVE+=(--reasoning-effort "$REASONING_EFFORT")
+ # drafts off on rank 0 as on the followers (a follower without the drafter refuses a drafted round)
+ [[ "$DRAFTS" == 1 ]] || SERVE+=(--no-drafts)
+ SERVE+=("$@")
+ here=(docker run -d --name "$CONTAINER_NAME" $RUN_ARGS -v "$HF_CACHE:/hf:ro")
++[[ -z "$API_KEY_FILE" ]] || here+=(-v "$API_KEY_FILE:/run/secrets/model-api-key:ro")
+ [[ "$ENGRAM_PACKED" != 1 ]] || here+=(-v "$(packed_dir_here):/engram-packed:ro")
+ [[ "$RDMA" == 0 ]] || ENV0+=("TF_RDMA_DEVICES=${NODE_HCAS[0]}")
+ for x in "${ENV0[@]}" "${ENGINE_ENV[@]}"; do here+=(-e "$x"); done
+@@ -176,7 +184,7 @@ log "Rank 0 here: ${SERVE[*]}"
+ "${here[@]}" >/dev/null
+ 
+ # ---------------------------------------------------------------- 4. load
+-step 4 "Loading: ~75 GiB of weights on each Spark over NFS, then the caches (a few minutes)"
++step 4 "Loading: ~75 GiB of local SSD weights on each Spark, then the caches (a few minutes)"
+ docker logs -f "$CONTAINER_NAME" 2>&1 | sed -u "s/^/  ${D}│${R} /" &
+ LOGS_PID=$!
+ trap 'kill $LOGS_PID 2>/dev/null || true' EXIT
+@@ -186,7 +194,7 @@ fail() {
+   die "$1"
+ }
+ start=$SECONDS
+-until curl -sf --max-time 5 "$URL/v1/models" >/dev/null 2>&1; do
++until api_curl -sf --max-time 5 "$URL/v1/models" >/dev/null 2>&1; do
+   running_here || fail "rank 0 exited (code $(docker inspect -f '{{.State.ExitCode}}' "$CONTAINER_NAME")) before it was ready"
+   for i in 1 2 3; do running_worker "$i" || fail "rank $i on $(worker_host "$i") exited before the server was ready"; done
+   (( SECONDS - start < WAIT_TIMEOUT )) || fail "not ready after ${WAIT_TIMEOUT}s (WAIT_TIMEOUT); the ranks are still running"
+@@ -197,7 +205,7 @@ log "Server answered after $((SECONDS - start))s"
+ 
+ # ---------------------------------------------------------------- 5. smoke test
+ step 5 "Smoke test: one chat completion through all 4 ranks"
+-if smoke=$(curl -s --max-time 300 "$URL/v1/chat/completions" -H 'Content-Type: application/json' \
++if smoke=$(api_curl -s --max-time 300 "$URL/v1/chat/completions" -H 'Content-Type: application/json' \
+              -d "{\"model\": \"$SERVED_NAME\", \"max_tokens\": 16, \"temperature\": 0, \"chat_template_kwargs\": {\"enable_thinking\": false}, \"messages\": [{\"role\": \"user\", \"content\": \"Reply with OK.\"}]}" |
+            python3 -c 'import json,sys; r = json.load(sys.stdin); c = r["choices"][0]["message"].get("content") or ""; assert c.strip(); assert len(c.strip()) < 8 or len(set(c.strip())) > 2, "one repeated character"; print(repr(c.strip()[:40]) + ",", r["usage"]["completion_tokens"], "tokens")' 2>/dev/null); then
+   log "OK: $smoke"
+diff --git a/tests/test_scripts.py b/tests/test_scripts.py
+index 2a2c80e..7f35c17 100644
+--- a/tests/test_scripts.py
++++ b/tests/test_scripts.py
+@@ -319,6 +319,21 @@ node_order() { echo 0,1,2,3; }
+         self.assertEqual(sorted(self.launched()), ["head", "w1", "w2", "w3"], out)
+         self.assertIn("is now LIVE", out)
+ 
++    def test_restart_requires_minimum_memory_before_starting_any_rank(self):
++        for host, available in [("head", 99), ("w2", 99), ("head", 100), ("w2", 100)]:
++            with self.subTest(host=host, available=available):
++                (self.tmp / "bin" / "free").write_text(
++                    '#!/bin/sh\n'
++                    f'if [ "${{SIM_HOST:-head}}" = "{host}" ]; then available={available}; else available=120; fi\n'
++                    'echo "Mem: 128 1 1 0 0 $available"\n'
++                )
++                code, out = self.run_script(["start.sh", "restart"], {"PREPARE": "0"})
++                enough = available >= 100
++                self.assertEqual(code, 0 if enough else 1, out)
++                if not enough:
++                    for node in ["head", "w1", "w2", "w3"]:
++                        self.assertEqual(self.left(node), [], out)
++
+     def test_restart_stops_when_a_rank_cannot_be_stopped(self):
+         for h in ["head", "w1", "w2", "w3"]:
+             self.containers(h, NAME)
