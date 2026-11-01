@@ -17,10 +17,16 @@ that required its smaller pool.
 | [FP8](../glm-5.3-flash-fp8-4node/glm-5.3-flash-fp8-tp4.yaml) | `zai-org/GLM-5.3-Flash` | Native block-scaled Triton W8A8 |
 
 Both retain TP4 plus expert parallelism, allgather/reduce-scatter, native NoPE
-sparse attention, FP8 target KV, BF16 draft KV, DFlash2 with seven speculative
-tokens, chunked prefill, GLM tool/reasoning parsers, and low reasoning effort.
-Both use four sequences, 8,192-token prefill batches, CUDA graphs for the target
-and drafter, and one OpenMP thread to avoid CPU spin-wait contention. NVFP4
+sparse attention, FP8 target KV, BF16 draft KV, DFlash2, chunked prefill, GLM
+tool/reasoning parsers, and low reasoning effort. `GLM_MAX_REASONING_EFFORT=low`
+also lowers higher per-request efforts, such as an agent's `high`, to `low`.
+DFlash2 drafts seven tokens for one running request, five for two, and three
+for three or more
+(`num_speculative_tokens_per_batch_size`). Both use eight sequences,
+2,048-token prefill batches, CUDA graphs for the target and drafter, and one
+OpenMP thread to avoid CPU spin-wait contention. Triton, TileLang, and
+FlashInfer JIT caches are kept on SparkRun's per-model `/cache/runtime` mount.
+NVFP4 also sets `GLM_FAST_LOAD=1` for the image's fast safetensors loader. NVFP4
 reserves **12 GiB KV per GPU**; FP8 uses **8 GiB** because its larger weights
 leave less allocation headroom. These are different cache capacities at the
 same per-request context limit, not different KV precision. Additional long
@@ -59,6 +65,10 @@ Z.ai's native FP8 checkpoint occupies approximately 306 GiB. Both can coexist
 in the Hugging Face cache, but budget for images, download temporary space,
 and Docker's image-export temporary files separately. A full root filesystem
 can prevent `docker save` even when the model-cache filesystem has free space.
+
+To require an API key on `/v1/*`, add `-e VLLM_API_KEY="$(cat ~/.config/vllm-api-key)"`
+to `sparkrun run`; see the [sibling API key section](../glm-5.3-flash-nvfp4-2node/README.md#api-key).
+Export the same `VLLM_API_KEY` before running the evaluation scripts.
 
 The API listens on port 8000. Served names are `GLM-5.3-Flash-NVFP4-TP4` and
 `GLM-5.3-Flash-FP8-TP4` respectively. Always bound generation with `max_tokens`

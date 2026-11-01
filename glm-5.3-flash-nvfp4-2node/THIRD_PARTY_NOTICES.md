@@ -6,12 +6,15 @@
 - [vLLM](https://github.com/vllm-project/vllm) is Apache-2.0 licensed. This recipe
   references its published ARM64 container; bundled components retain their
   respective licenses. `patch_dflash2.py`, `patch_sm121.py`,
-  `patch_nvidia_mtp.py`, and the source-overlay tests contain/adapt vLLM source
-  excerpts and retain Apache-2.0 licensing.
+  `patch_nvidia_mtp.py`, `patch_openai_compat.py`, and the source-overlay tests
+  contain/adapt vLLM source excerpts and retain Apache-2.0 licensing.
   Copyright contributors to the vLLM project.
 - [NVIDIA Model Optimizer](https://github.com/NVIDIA/Model-Optimizer) is
   Apache-2.0 licensed and was used upstream to quantize the checkpoint.
 - [SparkRun](https://github.com/spark-arena/sparkrun) is Apache-2.0 licensed.
+- [knapcio/GLM-5.3-Flash-4x-DGX-Spark-TP4](https://github.com/knapcio/GLM-5.3-Flash-4x-DGX-Spark-TP4/tree/770d115)
+  is MIT licensed. `glm_fast_load.py` is copied from its `overlay/` directory
+  with an attribution header; see [LICENSE-MIT-knapcio](LICENSE-MIT-knapcio).
 - [LibertAI's sparse-MLA plugin](https://github.com/Libertai/vllm-sparse-mla-blackwell/tree/3701f85be073ff75578bdffb22469161223b09fc)
   is Apache-2.0 licensed. The Docker build fetches this pinned source, verifies
   its archive checksum, and compiles its native SM121 attention kernel. It

@@ -1,0 +1,1 @@
+import os; os.environ.get("GLM_FAST_LOAD", "0").strip().lower() in ("1", "on", "true") and __import__("glm_fast_load").register()

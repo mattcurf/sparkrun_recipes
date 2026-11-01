@@ -4,7 +4,7 @@ model: nvidia/GLM-5.3-Flash-NVFP4
 model_revision: 423acf37583782c51c142d145aef733d72943d93
 runtime: vllm-distributed
 # Built by ../glm-5.3-flash-nvfp4-2node/build-image.sh.
-container: glm53-flash-nvfp4-sparkrun-v2
+container: glm53-flash-nvfp4-sparkrun-v5
 min_nodes: 4
 max_nodes: 4
 cluster_only: true
@@ -35,12 +35,14 @@ defaults:
   tensor_parallel: 4
   gpu_memory_utilization: 0.80
   max_model_len: 262144
-  max_num_seqs: 4
-  max_num_batched_tokens: 8192
+  max_num_seqs: 8
+  # Bounds each prefill chunk so concurrent decodes keep advancing.
+  max_num_batched_tokens: 2048
   kv_cache_dtype: fp8
   kv_cache_memory_bytes: 12884901888
   moe_backend: flashinfer_cutlass
-  speculative_config: '{"method":"dflash","model":"incoai/GLM-5.3-Flash-DFlash2","revision":"dc77ff1c99eeb2df044ee3d4f0094eb033fee410","num_speculative_tokens":7,"kv_cache_dtype":"auto"}'
+  # Seven drafts for one running request, five for two, three for three or more.
+  speculative_config: '{"method":"dflash","model":"incoai/GLM-5.3-Flash-DFlash2","revision":"dc77ff1c99eeb2df044ee3d4f0094eb033fee410","num_speculative_tokens":7,"kv_cache_dtype":"auto","num_speculative_tokens_per_batch_size":[[1,1,7],[2,2,5],[3,8,3]]}'
   execution_flags: --no-enforce-eager
 env:
   VLLM_GLM53_CUDA_SPARSE_MLA: "1"
@@ -48,6 +50,14 @@ env:
   PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
   VLLM_NO_USAGE_STATS: "1"
   DO_NOT_TRACK: "1"
+  # Fast safetensors loader in the image (glm_fast_load.py).
+  GLM_FAST_LOAD: "1"
+  # Lower requested reasoning effort above this level (patch_openai_compat.py).
+  GLM_MAX_REASONING_EFFORT: low
+  # JIT caches on SparkRun's persistent per-model runtime-cache mount.
+  TRITON_CACHE_DIR: /cache/runtime/triton
+  TILELANG_CACHE_DIR: /cache/runtime/tilelang
+  FLASHINFER_WORKSPACE_BASE: /cache/runtime/flashinfer
 command: |
   vllm serve {model} \
     --revision {revision} \
