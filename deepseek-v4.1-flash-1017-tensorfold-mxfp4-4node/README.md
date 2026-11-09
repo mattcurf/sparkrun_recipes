@@ -1,7 +1,7 @@
 # DeepSeek V4.1 Flash 1017 on TensorFold: four Sparks
 
-Captures the TensorFold native Zig configuration serving successfully on
-gb10-1 through gb10-4. This is a **separate alternative** to the retained
+Captures a TensorFold native Zig configuration validated on four DGX Sparks.
+This is a **separate alternative** to the retained
 [vLLM recipe](../deepseek-v4.1-flash-1017-mxfp4-4node/), not an update to it.
 It serves the original DeepSeek checkpoint as published, not NVIDIA's newer
 NVFP4 export. No re-quantization, NFS, DERISKED or abliteration overlay.
@@ -15,7 +15,7 @@ either recipe while the existing server is using these GPUs.
 
 | Setting | Value |
 | --- | --- |
-| API | `http://192.168.1.228:8000/v1` |
+| API | `http://<head-host>:8000/v1` |
 | Model / alias | `deepseek-v4.1-flash-1017-mxfp4-tp4` / `DeepSeek-V4.1-Flash-1017` |
 | Context / shared position pool | 1,048,576 / 2,097,152 |
 | Concurrent requests / round rows | 16 / 48 |
@@ -55,7 +55,7 @@ Its NFS instructions are replaced by our local-SSD patch, not followed.
 
 ```bash
 cp local.env.example local.env
-# Review local.env and the YAML for this cluster's users, paths and interfaces.
+# Replace all example addresses, users, paths and interfaces before preparation.
 ./setup-model.sh
 ```
 
@@ -86,7 +86,7 @@ features:
   core.external_plugins: true
 plugins:
   paths:
-    - /home/matt/sparkrun_recipes/deepseek-v4.1-flash-1017-tensorfold-mxfp4-4node/runtime
+    - /path/to/sparkrun_recipes/deepseek-v4.1-flash-1017-tensorfold-mxfp4-4node/runtime
 ```
 
 No package installation is necessary. This repository does not automatically
@@ -95,15 +95,18 @@ change your SparkRun configuration. Keep the runtime registered for future
 
 ## Validate now; launch only after the current server is stopped
 
-The `gb` cluster must list these management IPs in this exact rank order:
-`192.168.1.228`, `192.168.1.171`, `192.168.1.176`, `192.168.1.191`.
-Workers connect to `10.10.1.228:29760` through `29762` on the private fabric.
-For another cluster, change `runtime_config.hosts`, the master address, NICs,
-HCA names, cache and key paths together. This captures a **switch**, not a ring.
+The checked-in `192.0.2.10`–`192.0.2.13` addresses are RFC 5737 documentation
+examples, not real hosts. Before launch, create a private copy of the recipe
+and replace `runtime_config.hosts` with your four management addresses in rank
+order. Set the master address to the head's private fabric address; workers use
+ports 29760 through 29762. Replace the NIC/HCA placeholders, cache and key paths
+together, and make the SparkRun cluster's host order match the private recipe.
+Keep that inventory and `local.env` out of the public repository.
+This captures a **switch**, not a ring; the bare public example is not deployable.
 
 ```bash
 sparkrun recipe validate deepseek-v4.1-flash-1017-tensorfold-tp4.yaml
-sparkrun run deepseek-v4.1-flash-1017-tensorfold-tp4.yaml --cluster gb --port 8000 --dry-run
+sparkrun run /path/to/private-recipe.yaml --cluster YOUR_CLUSTER --port 8000 --dry-run
 ```
 
 **Do not run the following yet.** In an approved maintenance window, stop the
@@ -111,7 +114,7 @@ existing standalone service coherently with its own `stop.sh`, ensure at least
 100 GiB available on each node, then launch:
 
 ```bash
-sparkrun run deepseek-v4.1-flash-1017-tensorfold-tp4.yaml --cluster gb --port 8000
+sparkrun run /path/to/private-recipe.yaml --cluster YOUR_CLUSTER --port 8000
 ```
 
 The explicit `--port 8000` prevents SparkRun's automatic port increment from
@@ -140,11 +143,11 @@ separately after a reboot. It also does not enable any opt-in `TF_DS_*` tuning.
 
 ## Verification and licensing
 
-From the repository root, run the CPU-only recipe tests using SparkRun's
-Python environment (or a Python environment with SparkRun and PyYAML):
+From the repository root, activate a Python environment with SparkRun and
+PyYAML, then run the CPU-only recipe tests:
 
 ```bash
-/home/matt/.local/share/uv/tools/sparkrun/bin/python -m unittest discover -s tools
+python -m unittest discover -s tools
 ```
 
 Offline command checks cover matching head/follower settings and invalid

@@ -32,7 +32,7 @@ concurrent prefill.
 
 ## Controlled setup
 
-Four DGX Sparks on the saved `gb` cluster, switched dual-rail RoCE, one rank per
+Four DGX Sparks with switched dual-rail RoCE, one rank per
 node. Both profiles use TP4 + EP, 262,144 maximum tokens, FP8 target KV, BF16
 DFlash2 KV, k7, four sequences, 8,192-token prefill batches, prefix caching,
 low reasoning effort, greedy sampling, and CUDA graphs. All four ranks used

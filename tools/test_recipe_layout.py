@@ -2,6 +2,7 @@
 """CPU-only checks for recipe naming, threading policy, and documentation links."""
 
 import importlib.util
+import json
 import re
 import shlex
 import unittest
@@ -101,7 +102,7 @@ class TensorFoldRecipeTest(unittest.TestCase):
                 start = worker.index("tf-dsv41-lanes")
                 self.assertEqual(
                     worker[start + 3 : start + 7],
-                    [str(rank), "4", "10.10.1.228", "29760"],
+                    [str(rank), "4", "192.0.2.10", "29760"],
                 )
                 self.assertEqual(worker[worker.index("--graphs") + 1], "0")
                 self.assertEqual(worker[worker.index("--drafts") + 1], "1")
@@ -150,6 +151,32 @@ class TensorFoldRecipeTest(unittest.TestCase):
                 list(reversed(self.recipe.runtime_config["hosts"])),
                 dry_run=True,
             )
+
+
+@unittest.skipIf(Recipe is None, "run with SparkRun's Python environment")
+class SparkDS41FRecipeTest(unittest.TestCase):
+    def test_native_ranks_preserve_switched_serving_contract(self):
+        from sparkrun.runtimes.vllm_distributed import VllmDistributedRuntime
+
+        folder = ROOT / "deepseek-v4.1-flash-1017-spark-ds41f-mxfp4-4node"
+        recipe = Recipe.load(folder / "deepseek-v4.1-flash-1017-spark-ds41f-tp4.yaml")
+        runtime = VllmDistributedRuntime()
+        for rank in range(4):
+            with self.subTest(rank=rank):
+                command = shlex.split(runtime.generate_node_command(
+                    recipe, {"resolved_model_path": "/local-nvme/model"},
+                    "192.0.2.10", 4, rank,
+                ).replace("\\\n", ""))
+                self.assertEqual(command[:3], ["vllm", "serve", "/local-nvme/model"])
+                for flag, value in [("--nnodes", "4"), ("--node-rank", str(rank)),
+                                    ("--max-model-len", "1048576"),
+                                    ("--master-addr", "192.0.2.10"),
+                                    ("--load-format", "direct"),
+                                    ("--kv-cache-memory-bytes", "6442450944")]:
+                    self.assertEqual(command.count(flag), 1)
+                    self.assertEqual(command[command.index(flag) + 1], value)
+                self.assertEqual("--headless" in command, rank > 0)
+                self.assertEqual(json.loads(command[command.index("--engram-config") + 1])["table_memory"], "disk")
 
 
 if __name__ == "__main__":

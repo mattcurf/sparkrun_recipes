@@ -54,9 +54,9 @@ sparkrun recipe validate glm-5.3-flash-fp8-4node/glm-5.3-flash-fp8-tp4.yaml
 sparkrun run glm-5.3-flash-fp8-4node/glm-5.3-flash-fp8-tp4.yaml --cluster <four-node-cluster>
 ```
 
-Stop conflicting workloads only with the operator's approval. The development
-cluster is named `gb`; its four nodes share switched RoCE networking. Use
-SparkRun's network detection rather than copying machine-specific interface
+Stop conflicting workloads only with the operator's approval. The validated
+four-node setup uses switched RoCE networking. Use SparkRun's network detection
+rather than copying machine-specific interface
 names. All ranks must use the same Docker image ID, not just the same tag.
 Allow substantial time for first-time image/model distribution and warmup.
 
