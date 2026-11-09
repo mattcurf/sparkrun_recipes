@@ -1,40 +1,56 @@
 # DeepSeek V4.1 Flash on four DGX Sparks
 
-Serves the official mixed MXFP4/MXFP8
+This recipe serves the official mixed MXFP4/MXFP8
 [`deepseek-ai/DeepSeek-V4.1-Flash`](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash)
-checkpoint on four DGX Sparks with TP4, DSpark k5, CUDA graphs, and a 262,144-token
-context window. The 203 GB Engram tables remain on disk; each rank can use a
-rank-local sparse row copy while retaining the shared checkpoint as a safe fallback.
+checkpoint on four DGX Sparks.
+It uses TP4.
+It uses DSpark k5.
+It uses CUDA graphs.
+The context window contains 262,144 tokens.
+
+The 203 GB Engram tables remain on disk.
+Each rank can use a local sparse row copy.
+The shared checkpoint remains a safe fallback.
 See [measured correctness, throughput, and tool-evaluation results](RESULTS.md).
 
-This is a SparkRun adaptation of
+This SparkRun recipe adapts
 [`tonyd2wild/DeepSeek-V4.1-Flash-vLLM-DGX-Spark`](https://github.com/tonyd2wild/DeepSeek-V4.1-Flash-vLLM-DGX-Spark)
-at `fc725ecf10869c184f4347dd73336536d395753c`. It deliberately pins vLLM to
-`e47aa780bccf59f59dfa2cbb18e17a10b4fe69ba`: later trees are not compatible
-with these whole-file patches and have produced silently corrupted output.
+at `fc725ecf10869c184f4347dd73336536d395753c`.
+It deliberately pins vLLM to `e47aa780bccf59f59dfa2cbb18e17a10b4fe69ba`.
+Later source versions are not compatible with these whole-file patches.
+They have produced corrupted output without warnings.
 
 ## Storage setup
 
-The checkpoint is about 510 GB and is not copied to every rank. All four hosts
-must see it at the same absolute, read-only-capable path. The recipe declares
-that path through SparkRun's supported `cluster_config.resolved_model_path`
-schema. Its example location is `/srv/sparkrun/models/DeepSeek-V4.1-Flash`;
-change that field when your shared model storage uses another path.
+The checkpoint is about 510 GB.
+The recipe does not copy it to every rank.
+All four hosts must see it at the same absolute path.
+The path must support read-only access.
 
-Engram rows always live under the SSH user's home directory on each host at
-`$HOME/.local/share/sparkrun/engram/DeepSeek-V4.1-Flash`. SparkRun 0.3.6 quotes
-Docker volume sources, so putting `~/...` directly in `executor_config.volumes`
-would pass a literal tilde instead of expanding the remote user's home. The setup
-script therefore creates a stable per-host symlink at
-`/srv/sparkrun/engram/DeepSeek-V4.1-Flash`, which the recipe mounts read-only at
-`/engram-local`. The helper creates this root-owned alias through the already
-required recipe image; Docker rejects symlinked mount sources under world-writable
-directories such as `/var/tmp`. This avoids both control-host expansion and the
-container's root `$HOME` while keeping setup and serving paths fixed.
+The recipe declares this path through SparkRun's supported `cluster_config.resolved_model_path` schema.
+The example location is `/srv/sparkrun/models/DeepSeek-V4.1-Flash`.
+Change that field if your shared model storage uses another path.
 
-Prepare the shared checkpoint and local Engram directories from a host with
-`hf` after building the required recipe image, then name the four nodes in
-SparkRun rank order:
+Engram rows always use `$HOME/.local/share/sparkrun/engram/DeepSeek-V4.1-Flash` under the SSH user's home directory on each host.
+SparkRun 0.3.6 quotes Docker volume sources.
+Thus, `~/...` in `executor_config.volumes` passes a literal tilde.
+It does not expand the remote user's home directory.
+
+The setup script creates a stable symlink on each host at `/srv/sparkrun/engram/DeepSeek-V4.1-Flash`.
+The recipe mounts this path read-only at `/engram-local`.
+The helper uses the required recipe image to create this root-owned alias.
+Docker rejects symlinked mount sources under world-writable directories such as `/var/tmp`.
+
+This arrangement avoids control-host expansion.
+It also avoids the container's root `$HOME`.
+The setup and serving paths stay fixed.
+
+1. Select a host with `hf`.
+2. Build the required recipe image.
+3. Specify the four nodes in SparkRun rank order.
+4. Prepare the shared checkpoint and local Engram directories.
+
+Use these commands:
 
 ```bash
 ./build-image.sh
@@ -42,24 +58,28 @@ SparkRun rank order:
   <rank-0> <rank-1> <rank-2> <rank-3>
 ```
 
-The script pins model revision `dba1be0a40aa45a94ad051997016db3960a90277`,
-checks the final shard, and creates approximately 48 GB of rank-local Engram
-rows on each node. It verifies 8,008 sampled weight and scale rows per rank
-byte-for-byte. If a local copy is absent or does not cover the rank's rows, the
-runtime safely reads those Engram rows from the shared checkpoint instead.
+The script pins model revision `dba1be0a40aa45a94ad051997016db3960a90277`.
+It checks the final shard.
+It creates approximately 48 GB of rank-local Engram rows on each node.
+It verifies 8,008 sampled weight and scale rows per rank byte-for-byte.
+
+The runtime safely reads Engram rows from the shared checkpoint if a local copy is absent.
+It also uses this fallback if the local copy does not cover the rank's rows.
 
 ### Download locations and cleanup
 
-`setup-model.sh` downloads the approximately 510 GB checkpoint into its first
-argument. In the example above that is
-`/srv/sparkrun/models/DeepSeek-V4.1-Flash`. It also creates approximately 48 GB
-of allocated sparse Engram data on each rank host at
-`$HOME/.local/share/sparkrun/engram/DeepSeek-V4.1-Flash` (approximately 190 GB
-apparent size). The `/srv/sparkrun/engram/DeepSeek-V4.1-Flash` path on each host
-is only a symlink to that user's Engram directory, not another copy.
+`setup-model.sh` downloads the approximately 510 GB checkpoint into the directory from its first argument.
+The example uses `/srv/sparkrun/models/DeepSeek-V4.1-Flash`.
+The script creates sparse Engram data at `$HOME/.local/share/sparkrun/engram/DeepSeek-V4.1-Flash` on each rank host.
+This data allocates approximately 48 GB per host.
+Its apparent size is approximately 190 GB per host.
 
-Stop the recipe before deleting its files. To remove the rank-local Engram data,
-run the following on **each** rank host as the same SSH user used by SparkRun:
+Each host's `/srv/sparkrun/engram/DeepSeek-V4.1-Flash` path is only a symlink to that user's Engram directory.
+It is not another copy.
+
+1. Stop the recipe before you delete its files.
+2. Sign in to **each** rank host as the SSH user that SparkRun uses.
+3. Run these commands on each host to remove the rank-local Engram data:
 
 ```bash
 docker run --rm --entrypoint sh \
@@ -68,73 +88,90 @@ docker run --rm --entrypoint sh \
 rm -rf -- "$HOME/.local/share/sparkrun/engram/DeepSeek-V4.1-Flash"
 ```
 
-Delete the shared checkpoint only after confirming that no other recipe uses
-it. Run this once against the same shared path passed to `setup-model.sh`:
+4. Confirm that no other recipe uses the shared checkpoint before you delete it.
+5. Run these commands once against the shared path that you passed to `setup-model.sh`:
 
 ```bash
 SHARED_MODEL_DIR=/srv/sparkrun/models/DeepSeek-V4.1-Flash
 rm -rf -- "$SHARED_MODEL_DIR"
 ```
 
-The build checkout defaults to
-`${XDG_CACHE_HOME:-$HOME/.cache}/sparkrun-build/deepseek-v4.1-flash`; it can be
-removed after the image is built. Docker images are managed separately with
-`docker image rm deepseek-v4.1-flash-sparkrun-v1` on hosts where they are no
-longer needed.
+The build checkout defaults to `${XDG_CACHE_HOME:-$HOME/.cache}/sparkrun-build/deepseek-v4.1-flash`.
+You can remove it after you build the image.
+Manage Docker images separately on each host.
+Use `docker image rm deepseek-v4.1-flash-sparkrun-v1` only where you no longer need the image.
 
 ## Build and run
 
-Build on a node with at least 80 GB free before running the storage setup above,
-then distribute the resulting image by running SparkRun. The build compiles the
-exact vLLM stable extension and FlashInfer 0.7.0rc1 SM 12.1a MXFP8 and sparse-MLA
-kernels with low parallelism.
+1. Build on a node with at least 80 GB free.
+2. Complete the storage setup above after the build.
+3. Run SparkRun to distribute the resulting image.
+
+The build compiles the exact vLLM stable extension with low parallelism.
+It also compiles FlashInfer 0.7.0rc1 SM 12.1a MXFP8 and sparse-MLA kernels with low parallelism.
 
 ```bash
 sparkrun recipe validate deepseek-v4.1-flash-mxfp4-tp4.yaml
 sparkrun run deepseek-v4.1-flash-mxfp4-tp4.yaml --cluster <four-node-cluster>
 ```
 
-The recipe uses host bind mounts and device access, so current SparkRun asks you
-to trust the audited local recipe. The API name is
-`deepseek-v4.1-flash-mxfp4-tp4` on port 8000. Thinking is off by default; enable
-it per request with `chat_template_kwargs={"thinking":true}`.
+The recipe uses host bind mounts.
+It also uses device access.
+Thus, current SparkRun asks you to trust the audited local recipe.
 
-The 112 GiB container memory limit matches the reference deployment. SparkRun
-0.3.6 cannot set Docker's `memory-swap`, however, so Docker reports a 224 GiB
-combined memory-and-swap ceiling instead of the reference's 112 GiB. Do not use
-`docker update` to correct this after launch: on NVIDIA driver 580.159.03 it
-removes GPU access from the running container. This recipe remains within the
-112 GiB RAM limit during the checks below; use a SparkRun release with
-create-time `memory-swap` support if an exact no-swap boundary is required.
+The API name is `deepseek-v4.1-flash-mxfp4-tp4`.
+The API uses port 8000.
+Thinking is off by default.
+Enable thinking per request with `chat_template_kwargs={"thinking":true}`.
+
+The 112 GiB container memory limit matches the reference deployment.
+However, SparkRun 0.3.6 cannot set Docker's `memory-swap`.
+Docker therefore reports a 224 GiB combined memory-and-swap ceiling.
+The reference ceiling is 112 GiB.
+
+**Do not use `docker update` to correct this after launch.**
+On NVIDIA driver 580.159.03, it removes GPU access from the running container.
+
+This recipe stays within the 112 GiB RAM limit during the checks below.
+For an exact no-swap boundary, use a SparkRun release with create-time `memory-swap` support.
 
 ## Correctness gates
 
-Before throughput testing, verify all of the following against an idle endpoint:
+Before throughput testing, complete these checks against an idle endpoint:
 
-1. Non-empty coherent greedy chat output in eager and graph modes.
-2. SSE streaming emits incremental, non-repeating text.
-3. Automatic, forced, parallel, and tool-result-round-trip calls produce valid
-   V4.1 tool objects and arguments.
-4. A prompt above 250,000 actual tokens retrieves distinct values from its
-   beginning, middle, and end, then emits at least 256 coherent tokens.
-5. Every rank log reports its own Engram row range. Ranks with a prepared sparse
-   copy report the local `/engram-local` source; any fallback rank reports the
-   shared checkpoint. FlashInfer's sparse module must load from the image; first
-   launch may populate SparkRun's persistent TileLang shape cache, while a
-   subsequent launch must reuse it.
+1. Verify non-empty, coherent greedy chat output in eager and graph modes.
+2. Verify that SSE streaming emits incremental, non-repeating text.
+3. Verify valid V4.1 tool objects and arguments for automatic, forced, parallel, and tool-result-round-trip calls.
+4. Use a prompt above 250,000 actual tokens.
+   Verify retrieval of distinct values from its beginning, middle, and end.
+   Then verify at least 256 coherent output tokens.
+5. Verify that every rank log reports its own Engram row range.
+   Ranks with a prepared sparse copy must report the local `/engram-local` source.
+   Fallback ranks must report the shared checkpoint.
+6. Verify that FlashInfer loads its sparse module from the image.
+7. Check SparkRun's persistent TileLang shape cache.
+   The first launch may populate this cache.
+   A subsequent launch must reuse it.
 
-The V4.1 protocol settings are not interchangeable with DeepSeek V4: the recipe
-uses the model-selected V4.1 tokenizer plus `deepseek_v41` reasoning and tool
-parsers. Vision remains enabled, with up to four images per prompt.
+Do not interchange V4.1 protocol settings with DeepSeek V4 settings.
+The recipe uses the model-selected V4.1 tokenizer.
+It uses `deepseek_v41` reasoning and tool parsers.
+
+The recipe enables vision.
+Each prompt supports up to four images.
 
 ## Matched throughput benchmark
 
 The checked-in results use upstream
-[`eugr/llama-benchy` 0.4.0](https://github.com/eugr/llama-benchy/tree/v0.4.0),
-matching the previous TP4 comparison: 2,048 / 4,096 / 8,192 / 16,384 input
-tokens, concurrency 1 / 2 / 4, three measured batches after the tool's discarded
-shape warmup, and exactly 256 requested output tokens. Use a cache-isolating
-proxy or a fresh server cache for a cold-prefix comparison.
+[`eugr/llama-benchy` 0.4.0](https://github.com/eugr/llama-benchy/tree/v0.4.0).
+The settings match the previous TP4 comparison:
+
+- Input tokens: 2,048 / 4,096 / 8,192 / 16,384.
+- Concurrency: 1 / 2 / 4.
+- Measured batches: three after the tool's discarded shape warmup.
+- Requested output tokens: exactly 256.
+
+Use a cache-isolating proxy or a fresh server cache for a cold-prefix comparison.
 
 ```bash
 uvx --from llama-benchy==0.4.0 llama-benchy \
@@ -153,8 +190,15 @@ uvx --from llama-benchy==0.4.0 llama-benchy \
 
 The recorded quality run uses
 [`tool-eval-bench` 2.6.0](https://github.com/SeraphimSerapis/tool-eval-bench/tree/v2.6.0)
-at commit `992a6978ecbee2d72fa2ead9ccc509436769d088`, all 69 standard scenarios,
-greedy sampling, no thinking, seed 42, and a 300-second request timeout:
+at commit `992a6978ecbee2d72fa2ead9ccc509436769d088`.
+It uses all 69 standard scenarios.
+It uses greedy sampling.
+It uses no thinking.
+
+The seed is 42.
+The request timeout is 300 seconds.
+
+Run this command:
 
 ```bash
 uvx --from 'git+https://github.com/SeraphimSerapis/tool-eval-bench.git@992a6978ecbee2d72fa2ead9ccc509436769d088' \
@@ -166,7 +210,9 @@ uvx --from 'git+https://github.com/SeraphimSerapis/tool-eval-bench.git@992a6978e
 
 ## License
 
-Original recipe material is dedicated to the public domain under the Unlicense.
-Adapted upstream orchestration is MIT-licensed; vendored vLLM files are
-Apache-2.0. Model weights and built images are not distributed. See
+Original recipe material uses the Unlicense public-domain dedication.
+Adapted upstream orchestration is MIT-licensed.
+Vendored vLLM files are Apache-2.0.
+This directory does not distribute model weights or built images.
+See
 `LICENSE`, `LICENSE-MIT`, `LICENSE-APACHE`, and `THIRD_PARTY_NOTICES.md`.

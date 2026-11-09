@@ -1,23 +1,29 @@
 # Qwen3.8-Flash-Next FP8
 
-Serves the original
-[`Qwen/Qwen3.8-Flash-Next-FP8`](https://huggingface.co/Qwen/Qwen3.8-Flash-Next-FP8)
-quant on two DGX Sparks with vLLM tensor parallelism and three-token MTP
-speculative decoding. The recipe uses the model's native 262,144-token context.
+This recipe serves the original
+[`Qwen/Qwen3.8-Flash-Next-FP8`](https://huggingface.co/Qwen/Qwen3.8-Flash-Next-FP8) quantization on two DGX Sparks.
+It uses vLLM tensor parallelism.
+It uses three-token MTP speculative decoding.
+The recipe uses the model's native 262,144-token context.
 
 ## Run
 
-Install and configure [SparkRun](https://sparkrun.dev/), then run:
+Install [SparkRun](https://sparkrun.dev/).
+Configure SparkRun.
+Run these commands:
 
 ```bash
 sparkrun recipe validate qwen3.8-flash-next.yaml
 sparkrun run qwen3.8-flash-next.yaml --cluster <two-node-cluster>
 ```
 
-The vLLM image is pinned by digest and requires no local image build or runtime
-patch. SparkRun distributes the image and model to the worker. The
-OpenAI-compatible API listens on port 8000 by default. A Hugging Face login may
-be required to download the model.
+The recipe pins the vLLM image by digest.
+The image requires no local build.
+The image requires no runtime patch.
+SparkRun distributes the image to the worker.
+SparkRun distributes the model to the worker.
+The OpenAI-compatible API listens on port 8000 by default.
+You may need a Hugging Face login to download the model.
 
 ## Verified configuration
 
@@ -32,13 +38,16 @@ be required to download the model.
 
 ## Attribution and licensing
 
-- [Qwen3.8-Flash-Next-FP8](https://huggingface.co/Qwen/Qwen3.8-Flash-Next-FP8)
-  is published by the Qwen team. Its model and weights retain the terms stated
-  in the model card and are not distributed here.
+- The Qwen team publishes
+  [Qwen3.8-Flash-Next-FP8](https://huggingface.co/Qwen/Qwen3.8-Flash-Next-FP8).
+  The model and weights retain the terms in the model card.
+  This repository does not distribute the model or weights.
 - [vLLM](https://github.com/vllm-project/vllm) and
-  [SparkRun](https://github.com/spark-arena/sparkrun) are Apache-2.0 licensed
-  dependencies and are not distributed here.
+  [SparkRun](https://github.com/spark-arena/sparkrun) are dependencies.
+  These dependencies use the Apache-2.0 license.
+  This repository does not distribute these dependencies.
 
-The recipe and documentation are dedicated to the public domain under the
-Unlicense. See `LICENSE` and `THIRD_PARTY_NOTICES.md`. Everything is provided
-**as is**, without warranty.
+We dedicate the recipe and documentation to the public domain under the Unlicense.
+See `LICENSE`.
+See `THIRD_PARTY_NOTICES.md`.
+We provide everything **as is**, without warranty.

@@ -1,69 +1,96 @@
 # DeepSeek V4.1 Flash 1017: TP4 with maximum thinking
 
-Serves the official mixed MXFP4/MXFP8
+This recipe serves the official mixed MXFP4/MXFP8
 [1017 checkpoint](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017)
-on four DGX Sparks. Thinking defaults to **on**, reasoning effort to **100/100**,
-and prior reasoning is retained for multi-step coding/tool conversations.
-V4.1 reasoning/tool parsers, automatic tool choice, vision, and DSpark k5 are
-enabled. Sampling defaults to the model author's temperature 1.0 and top-p 1.0;
-clients can override these defaults.
+on four DGX Sparks.
+Thinking defaults to **on**.
+Reasoning effort defaults to **100/100**.
+The recipe retains prior reasoning for multi-step coding/tool conversations.
 
-**Validation:** default thinking, automatic and forced tool calls, a tool-result
-round trip retaining reasoning, and incremental SSE passed against these
-weights. A 97-scenario tool-use evaluation scored 94/100; see
-[results and limitations](RESULTS.md). The runtime and 256K context settings
-come from the [original recipe](../deepseek-v4.1-flash-mxfp4-4node/).
-Full-length context, concurrency limits, vision, and repository-level coding
-quality have not been validated for 1017. The original recipe's scores are
-not measurements of this checkpoint.
+It enables V4.1 reasoning/tool parsers.
+It enables automatic tool choice.
+It enables vision.
+It enables DSpark k5.
+
+Sampling defaults to the model author's temperature 1.0.
+The default top-p is 1.0.
+Clients can override these defaults.
+
+**Validation:** These checks passed against these weights:
+
+- Default thinking.
+- Automatic and forced tool calls.
+- A tool-result round trip that retained reasoning.
+- Incremental SSE.
+
+A 97-scenario tool-use evaluation scored 94/100.
+See [results and limitations](RESULTS.md).
+The runtime and 256K context settings come from the [original recipe](../deepseek-v4.1-flash-mxfp4-4node/).
+
+Validation does not cover full-length context, concurrency limits, vision, or repository-level coding quality for 1017.
+The original recipe's scores do not measure this checkpoint.
 
 ## Why this still uses the pinned disk-Engram runtime
 
 Checked on 2026-10-18:
 
 - [vLLM #58560](https://github.com/vllm-project/vllm/pull/58560) merged a fix
-  preventing compressor-ring writes into the null KV block. It does **not**
-  implement disk-backed Engram storage. The released v0.31.0 source does not
-  contain that fix; newer upstream source does.
+  that prevents compressor-ring writes into the null KV block.
+  It does **not** implement disk-backed Engram storage.
+  The released v0.31.0 source does not contain that fix.
+  Newer upstream source contains it.
 - The four-GB10 report in
   [issue #13](https://github.com/tonyd2wild/DeepSeek-V4.1-Flash-vLLM-DGX-Spark/issues/13)
-  used the `gitbisector/vllm` **fork**, including disk-Engram and SM12x changes,
-  not unmodified upstream. Its follow-up
-  [#59689](https://github.com/vllm-project/vllm/pull/59689) was closed unmerged.
+  used the `gitbisector/vllm` **fork**, not unmodified upstream.
+  That fork included disk-Engram and SM12x changes.
+  Its follow-up [#59689](https://github.com/vllm-project/vllm/pull/59689) closed without a merge.
 - [Upstream Engram storage](https://github.com/vllm-project/vllm/blob/da9134bc89364465f68aa679564435936d157a14/vllm/config/engram.py)
-  offers pinned CPU memory or GPU memory, not disk. A Spark's CPU and GPU share
-  the same memory. The original runtime measured 81.58 GiB per rank excluding
-  roughly 47 GiB of disk-backed tables: moving those tables to pinned RAM is
-  not a safe fit on four Sparks.
+  offers pinned CPU memory or GPU memory, not disk.
+  A Spark's CPU and GPU share the same memory.
+  The original runtime measured 81.58 GiB per rank.
+  This excludes roughly 47 GiB of disk-backed tables.
+  Moving those tables to pinned RAM is not safe on four Sparks because of memory limits.
 - SM12x attention also needs compatible FlashInfer page-size support; see
-  [#57292](https://github.com/vllm-project/vllm/pull/57292). A merged ring fix
-  alone is not evidence that an arbitrary released image works.
+  [#57292](https://github.com/vllm-project/vllm/pull/57292).
+  A merged ring fix alone does not prove that an arbitrary released image works.
 
-Consequently this recipe reuses `deepseek-v4.1-flash-sparkrun-v1`, with the
-existing Tony Deangelo-derived patches and exact vLLM pin, rather than claiming
-patch-free upstream support. **Do not replace it with a stock image:** the
-`DSV41_ENGRAM_DISK` environment variables are patch-specific. The SparkRun mod
-named `use-official-vllm` is a launcher setting, not a claim about image contents.
+Thus, this recipe reuses `deepseek-v4.1-flash-sparkrun-v1`.
+It uses the existing Tony Deangelo-derived patches.
+It keeps the exact vLLM pin.
+It does not claim patch-free upstream support.
+
+**Do not replace it with a stock image.**
+The `DSV41_ENGRAM_DISK` environment variables are patch-specific.
+
+The SparkRun mod named `use-official-vllm` is a launcher setting.
+Its name does not describe the image contents.
 
 ## Prepare and run
 
-Run the following commands from this recipe directory. Build the shared
-runtime if it is not already available locally:
+1. Open this recipe directory.
+2. Build the shared runtime if you do not already have it locally:
 
 ```bash
 ../deepseek-v4.1-flash-mxfp4-4node/build-image.sh
 ```
 
-The build has substantial disk/memory requirements; follow the
+The build needs substantial disk space and memory.
+Follow the
 [runtime build instructions](../deepseek-v4.1-flash-mxfp4-4node/README.md).
-Do not run the original recipe's `setup-model.sh`: it downloads the old weights.
+**Do not run the original recipe's `setup-model.sh`.**
+That script downloads the old weights.
 
-Download the **new** checkpoint once into a dedicated directory visible at the
-same absolute path on every host. Allow at least 511 GB for the checkpoint,
-plus download overhead. Never overlay it onto the original checkpoint or reuse
-the original recipe's Engram row copies. Provision a writable directory at
-the example path below, or replace it with your own storage path in both the
-download command and `cluster_config.resolved_model_path`.
+3. Prepare a writable directory for the **new** checkpoint.
+   Use the same absolute path on every host.
+   Allow at least 511 GB for the checkpoint.
+   Allow additional space for download overhead.
+   Use the example path below or your own storage path.
+   If you change the path, update both the download command and `cluster_config.resolved_model_path`.
+4. Download the new checkpoint once into this dedicated directory.
+   Never overlay it onto the original checkpoint.
+   Never reuse the original recipe's Engram row copies.
+5. Free all four GPUs from other inference workloads before launch.
+6. Run the validation, dry-run, and launch commands after the download:
 
 ```bash
 hf download deepseek-ai/DeepSeek-V4.1-Flash-1017 \
@@ -78,42 +105,52 @@ sparkrun run deepseek-v4.1-flash-1017-mxfp4-tp4.yaml \
 ```
 
 Change `cluster_config.resolved_model_path` if your storage uses another path.
-Model distribution is disabled: SparkRun does not download or verify an
-externally provisioned checkpoint, so use the pinned download above. The API
-serves `deepseek-v4.1-flash-1017-mxfp4-tp4` on the head node's port 8000.
-Launch only after freeing all four GPUs from other inference workloads.
+The recipe disables model distribution.
+SparkRun does not download or verify an externally provisioned checkpoint.
+Thus, use the pinned download above.
 
-If model allocation stalls despite sufficient free memory, fragmentation may
-be a factor. With inference stopped, the repository's `tools/cleanup-memory.sh`
-can reclaim caches on the selected hosts; pre-start memory compaction with
-`echo 1 > /proc/sys/vm/compact_memory` as root may also help. Do not reclaim
-caches or compact memory during serving. Allow substantial time for weight
-loading, draft-model loading, compilation, and warmup. Use `/health` and an
-inference smoke test, not container uptime alone, to judge readiness.
+The API serves `deepseek-v4.1-flash-1017-mxfp4-tp4` on the head node's port 8000.
 
-Engram lookups read directly from this checkpoint's files. No `/engram-local`
-mount is used, and `DSV41_ENGRAM_DIR` is explicitly empty to prevent using old
-rows with compatible shapes but different weights. Shared-storage latency can
-limit throughput. The existing 112 GiB container RAM limit is retained; see the
-original README's SparkRun 0.3.6 memory/swap caveat.
+Fragmentation may stall model allocation despite sufficient free memory.
+Stop inference before you try these recovery steps:
 
-TileLang and Triton compile into SparkRun's persistent, node-local
-`/cache/runtime` mount rather than model storage, which may be read-only or
-permission-restricted. FlashInfer continues to use the kernels already built
-into the pinned image.
+1. Use the repository's `tools/cleanup-memory.sh` to reclaim caches on the selected hosts.
+2. If necessary, compact memory before startup with `echo 1 > /proc/sys/vm/compact_memory` as root.
+
+**Do not reclaim caches or compact memory during serving.**
+Allow substantial time for weight loading, draft-model loading, compilation, and warmup.
+Use `/health` and an inference smoke test to judge readiness.
+Do not rely on container uptime alone.
+
+Engram lookups read directly from this checkpoint's files.
+The recipe does not use an `/engram-local` mount.
+It sets `DSV41_ENGRAM_DIR` explicitly empty.
+This prevents use of old rows with compatible shapes but different weights.
+
+Shared-storage latency can limit throughput.
+The recipe keeps the existing 112 GiB container RAM limit.
+See the original README's SparkRun 0.3.6 memory/swap limitation.
+
+TileLang and Triton compile into SparkRun's persistent, node-local `/cache/runtime` mount.
+They do not compile into model storage.
+Model storage may be read-only or permission-restricted.
+FlashInfer continues to use the kernels already built into the pinned image.
 
 ## Coding-agent requests
 
-Point your agent's OpenAI-compatible client at `http://<head-node>:8000/v1` and
-select `deepseek-v4.1-flash-1017-mxfp4-tp4`. Supply tools on every applicable
-request, preserve assistant `reasoning_content` and `tool_calls`, and return
-tool results with the matching `tool_call_id`. Do not strip reasoning from
-the conversation history. The server cannot execute tools for the client.
+1. Point your agent's OpenAI-compatible client at `http://<head-node>:8000/v1`.
+2. Select `deepseek-v4.1-flash-1017-mxfp4-tp4`.
+3. Supply tools on every applicable request.
+4. Preserve assistant `reasoning_content` and `tool_calls`.
+5. Return tool results with the matching `tool_call_id`.
 
-The recipe sets maximum effort through `chat_template_kwargs`, where this
-tokenizer accepts the numeric 1–100 budget. Avoid client overrides such as
-`reasoning_effort: "none"` or `thinking: false`. For clients that send explicit
-template settings, use:
+Do not remove reasoning from the conversation history.
+The server cannot execute tools for the client.
+
+The recipe sets maximum effort through `chat_template_kwargs`.
+This tokenizer accepts the numeric 1–100 budget.
+Avoid client overrides such as `reasoning_effort: "none"` or `thinking: false`.
+For clients that send explicit template settings, use:
 
 ```json
 {
@@ -130,31 +167,48 @@ template settings, use:
 }
 ```
 
-The example output budget includes reasoning and final output. Allow long
-request timeouts and prefer streaming. Effort 100 is the model's maximum
-reasoning setting, not a guarantee of best accuracy for every task.
+The example output budget includes reasoning and final output.
+Allow long request timeouts.
+Prefer streaming.
 
-The **256K total context** is a conservative deployment starting point, not
-the checkpoint's 1M architectural limit. Prompt, retained reasoning, tool
-results, and new output must all fit. DeepSeek recommends a 1M context and at
-least 256K output capacity; this starting configuration cannot provide both.
-To attempt the full context on an idle cluster, override
-`--max-model-len 1048576 -o max_num_seqs=1`, then validate memory and long-context
-retrieval before relying on it. This override is not hardware-validated here.
+Effort 100 is the model's maximum reasoning setting.
+It does not guarantee the best accuracy for every task.
+
+The **256K total context** is a conservative deployment starting point.
+It is not the checkpoint's 1M architectural limit.
+Prompt, retained reasoning, tool results, and new output must all fit.
+
+DeepSeek recommends a 1M context.
+It also recommends at least 256K output capacity.
+This starting configuration cannot provide both.
+
+To attempt the full context:
+
+1. Use an idle cluster.
+2. Override `--max-model-len 1048576 -o max_num_seqs=1`.
+3. Validate memory and long-context retrieval before you rely on this override.
+
+This recipe has no hardware validation for this override.
 
 ## Runtime acceptance checks
 
-Before using this for unattended coding, check coherent non-repeating text,
-non-empty reasoning followed by a final answer, incremental SSE, automatic and
-forced tool calls, a tool-result round trip retaining reasoning, and retrieval
-near the configured context limit. Confirm all four ranks report disk-backed
-Engram from the **1017** directory and no old `/engram-local` source. Do not
-reuse the old recipe's benchmark/quality scores as 1017 results.
+Before unattended coding, complete these checks:
+
+1. Check for coherent, non-repeating text.
+2. Check for non-empty reasoning followed by a final answer.
+3. Check incremental SSE.
+4. Check automatic and forced tool calls.
+5. Check a tool-result round trip that retains reasoning.
+6. Check retrieval near the configured context limit.
+7. Confirm that all four ranks report disk-backed Engram from the **1017** directory.
+8. Confirm that no rank reports the old `/engram-local` source.
+
+Do not reuse the old recipe's benchmark/quality scores as 1017 results.
 
 ## License
 
-Original contributions: [Unlicense](LICENSE). Adapted material retains its
-upstream terms, including the [Tech2wild MIT notice](LICENSE-MIT). The model
-is downloaded separately under its [MIT license](LICENSE-MODEL-MIT).
-No model weights, images, or additional runtime patches are distributed in
-this directory. See [third-party notices and provenance](THIRD_PARTY_NOTICES.md).
+Original contributions use the [Unlicense](LICENSE).
+Adapted material retains its upstream terms, including the [Tech2wild MIT notice](LICENSE-MIT).
+Download the model separately under its [MIT license](LICENSE-MODEL-MIT).
+This directory does not distribute model weights, images, or additional runtime patches.
+See [third-party notices and provenance](THIRD_PARTY_NOTICES.md).

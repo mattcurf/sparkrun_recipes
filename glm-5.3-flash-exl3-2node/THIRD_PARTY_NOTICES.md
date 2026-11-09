@@ -4,16 +4,16 @@
   MIT License. This recipe is a tuned derivative.
   <https://github.com/spark-arena/recipe-registry/blob/main/experimental-recipes/glm-5.3/glm-5.3-flash-exl3-dflash2-2x-vllm.yaml>
 - **GLM-5.3-Flash EXL3 dual-Spark runtime** — Copyright © 2026 Mia's AI Lab;
-  MIT License. The base container was built from this project at commit
-  `94f5d38bfa8792e3ac2fe5dc75075440a21db7c7`; the image build downloads three
-  runtime patches from commit `c707598ebcf02fd827d079a7c47e785069425efe`.
+  MIT License. The base container uses this project at commit `94f5d38bfa8792e3ac2fe5dc75075440a21db7c7`.
+  The image build downloads three runtime patches from commit `c707598ebcf02fd827d079a7c47e785069425efe`.
   <https://github.com/MiaAI-Lab/GLM-5.3-Flash-EXL3-2x-DGX-Sparks>
 - **vLLM** — Copyright the vLLM contributors; Apache License 2.0.
   <https://github.com/vllm-project/vllm>
 - **SparkRun** — Copyright the SparkRun contributors; Apache License 2.0.
   <https://github.com/spark-arena/sparkrun>
 - **GLM-5.3-Flash EXL3/TR3 and DFlash2 model weights** — retain the terms in
-  their respective model cards. They are downloaded at runtime, not included.
+  their respective model cards. The runtime downloads these weights.
+  This directory does not include them.
   <https://huggingface.co/Mia-AiLab/GLM-5.3-Flash-EXL3-TR3-4bpw>
   <https://huggingface.co/incoai/GLM-5.3-Flash-DFlash2>
 
