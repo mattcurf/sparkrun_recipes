@@ -6,8 +6,10 @@
   <https://github.com/tonyd2wild/DeepSeek-v4-Flash-0731-DSpark-1M-NVFP4-KV-2x-DGX-Spark>
 - **vLLM** — Copyright the vLLM contributors; Apache License 2.0.
   <https://github.com/vllm-project/vllm>
-- **DeepSeek-V4-Flash-0731** — model and weights retain the terms in the model
-  card. They are referenced and downloaded at runtime, not included.
+- **DeepSeek-V4-Flash-0731** — The model and weights retain the terms in the model card.
+  This recipe references them.
+  The runtime downloads them.
+  This directory does not include them.
   <https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731>
 - **SparkRun** — Copyright the SparkRun contributors; Apache License 2.0.
   <https://github.com/spark-arena/sparkrun>

@@ -1,34 +1,26 @@
 # GLM-5.3-Flash EXL3 with DFlash2
 
-Serves
-[`Mia-AiLab/GLM-5.3-Flash-EXL3-TR3-4bpw`](https://huggingface.co/Mia-AiLab/GLM-5.3-Flash-EXL3-TR3-4bpw)
-on two DGX Sparks with EXL3/TR3 4 bpw weights, TP2, FP8 KV cache, and
-seven-token DFlash2 speculative decoding. This variant uses a conservatively
-sized 196,608-token maximum context on a 2×128 GB Spark pair.
+Use two 128 GB DGX Sparks with SparkRun 0.3.6 or newer.
+
+| Setting | Value |
+| --- | --- |
+| Target | [`Mia-AiLab/GLM-5.3-Flash-EXL3-TR3-4bpw`](https://huggingface.co/Mia-AiLab/GLM-5.3-Flash-EXL3-TR3-4bpw), pinned revision |
+| Runtime | Native `vllm-distributed`; TP2; FP8 KV |
+| Context | 196,608 tokens maximum |
+| Draft | Pinned DFlash2; seven speculative tokens |
+| API | Port 8000; `GLM-5.3-Flash-EXL3` |
+| Distribution | Approximately 164 GB target weights, plus draft and pinned image |
 
 ## Run
 
-Install and configure [SparkRun](https://sparkrun.dev/), then run:
+1. Install and configure [SparkRun](https://sparkrun.dev/).
+2. Run from this directory:
 
 ```bash
 ./build-image.sh
 sparkrun recipe validate glm-5.3-flash-exl3.yaml
 sparkrun run glm-5.3-flash-exl3.yaml --cluster <two-node-cluster>
 ```
-
-The first launch downloads and distributes approximately 164 GB of target
-weights, the DFlash2 draft model, and the pinned container image. The
-OpenAI-compatible API listens on port 8000 with model ID
-`GLM-5.3-Flash-EXL3`.
-
-The recipe requires SparkRun 0.3.6 or newer for the native
-`vllm-distributed` runtime. It pins the target and draft model revisions. The
-custom image extends Spark-Arena's arm64 image built from MiaAI-Lab commit
-`94f5d38bfa8792e3ac2fe5dc75075440a21db7c7`. It adds MiaAI-Lab's later K-pool
-tail mapping and sparse-indexer workspace right-sizing fixes from commit
-`c707598ebcf02fd827d079a7c47e785069425efe`. The build script downloads only
-those three runtime patch files and verifies the pinned source archive before
-building.
 
 ## Verify
 
@@ -48,14 +40,13 @@ curl -s http://<head-node>:8000/v1/chat/completions \
 
 ## Attribution and licensing
 
-This tuned recipe is derived from the MIT-licensed experimental recipe in the
-[`spark-arena/recipe-registry`](https://github.com/spark-arena/recipe-registry),
-which is based on MiaAI-Lab's MIT-licensed
+This recipe adapts the MIT-licensed experimental recipe in
+[`spark-arena/recipe-registry`](https://github.com/spark-arena/recipe-registry).
+That recipe uses MiaAI-Lab's MIT-licensed
 [`GLM-5.3-Flash-EXL3-2x-DGX-Sparks`](https://github.com/MiaAI-Lab/GLM-5.3-Flash-EXL3-2x-DGX-Sparks).
-The derived YAML and Docker build retain the upstream MIT License. Original
-documentation in this directory is dedicated to the public domain under the
-Unlicense.
+The derived YAML and Docker build retain the upstream MIT License.
+We dedicate original documentation in this directory to the public domain under the Unlicense.
 
-Model weights, the DFlash2 draft model, container image, vLLM, and SparkRun are
-not distributed here and retain their upstream terms. See `LICENSE` and
-`THIRD_PARTY_NOTICES.md`. Everything is provided **as is**, without warranty.
+Weights, images, vLLM, and SparkRun retain upstream terms; this directory does not distribute them.
+See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for pinned runtime sources and terms.
+We provide everything **as is**, without warranty.
