@@ -1,0 +1,10 @@
+This recipe adapts configuration from spark-ds41f by Christopher Owen.
+https://github.com/christopherowen/spark-ds41f
+Source revision: cc20ed18be1f7cbf5c6c53cdee945f7cc77d5fc5
+Release configuration: releases/spark-ds41f-1107/cluster.json
+Licensed under the Apache License, Version 2.0.
+
+Local modifications: SparkRun native-distributed recipe and build helper;
+existing served name, single OMP thread, 6-GiB KV budget, persistent /cache
+Engram/JIT paths, no optional GLP-steered model, and exact locked build-commit
+reproduction. The original checkpoint and upstream source checks are unchanged.

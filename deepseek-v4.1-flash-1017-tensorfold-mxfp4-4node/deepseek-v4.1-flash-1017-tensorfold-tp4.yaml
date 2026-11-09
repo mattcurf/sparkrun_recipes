@@ -59,11 +59,12 @@ defaults:
   temperature: 1.0
   top_p: 1.0
   top_k: 20
-  master_addr: 10.10.1.228
+  # Documentation-only address and placeholders; replace in a private overlay.
+  master_addr: 192.0.2.10
   master_port: 29760
-  rdma_devices: rocep1s0f1,roceP2p1s0f1
-  hf_cache: /home/matt/.cache/huggingface
-  api_key_file: /home/matt/.config/vllm-api-key
+  rdma_devices: YOUR_HCA_0,YOUR_HCA_1
+  hf_cache: /path/to/local-nvme/huggingface
+  api_key_file: /path/to/model-api-key
   checkpoint: /hf/hub/models--deepseek-ai--DeepSeek-V4.1-Flash-1017/snapshots/1bae0e1088993b9b82de08f59de5be5a34e42170
   served_path: /hf/tensorfold-dsv41/1bae0e10/model
   rank_cache: /hf/tensorfold-dsv41/1bae0e10/rank-cache
@@ -77,8 +78,8 @@ env:
   TF_DS_SERVED_K: solo
   TF_DS_DRAFT_MS: "25"
   TF_DS_ROUND_MS: 21.5,26.3,31.1,36.0,40.3,44.7,49.0,53.4,57.1,60.8,64.5,68.2,72.0,75.7,79.4,83.1,86.4,89.7,93.0,96.3,99.6,102.9,106.2,109.5,112.8,116.1,119.4,122.7,126.0,129.3,132.6,135.9,138.6,141.3,144.0,146.7,149.4,152.1,154.8,157.5,160.2,162.9,165.6,168.3,171.0,173.7,176.4,179.1
-  NCCL_SOCKET_IFNAME: enp1s0f1np1
-  NCCL_IB_HCA: rocep1s0f1,roceP2p1s0f1
+  NCCL_SOCKET_IFNAME: YOUR_CONTROL_INTERFACE
+  NCCL_IB_HCA: YOUR_HCA_0,YOUR_HCA_1
   NCCL_IB_GID_INDEX: "3"
   NCCL_CROSS_NIC: "1"
   NCCL_IB_SUBNET_AWARE_ROUTING: "1"
@@ -89,7 +90,8 @@ env:
 runtime_config:
   # Host order determines NCCL rank and the rank-cache file. This is the
   # validated SWITCH topology, not the upstream switchless-ring variant.
-  hosts: [192.168.1.228, 192.168.1.171, 192.168.1.176, 192.168.1.191]
+  # RFC 5737 documentation addresses, not a deployable cluster inventory.
+  hosts: [192.0.2.10, 192.0.2.11, 192.0.2.12, 192.0.2.13]
   worker_command: |
     tf-dsv41-lanes "{checkpoint}" "{rank_cache}" {node_rank} 4 \
       {master_addr} {master_port} "{kernel_kit}" \

@@ -18,6 +18,7 @@ container tags, and checkpoint revisions are unchanged.
 | DeepSeek V4.1 Flash | Official MXFP4/MXFP8 weights, TP4, disk-backed Engram, DSpark, 256K context | [`deepseek-v4.1-flash-mxfp4-4node/`](deepseek-v4.1-flash-mxfp4-4node/) |
 | DeepSeek V4.1 Flash 1017 | Official MXFP4/MXFP8 weights, TP4, patched disk-backed Engram, maximum thinking, DSpark, 256K context | [`deepseek-v4.1-flash-1017-mxfp4-4node/`](deepseek-v4.1-flash-1017-mxfp4-4node/) |
 | DeepSeek V4.1 Flash 1017 — TensorFold | Official MXFP4/MXFP8 weights, native Zig TP4, local-SSD Engram (no NFS), DSpark, 1M context; captured live settings, SparkRun launch dry-run only | [`deepseek-v4.1-flash-1017-tensorfold-mxfp4-4node/`](deepseek-v4.1-flash-1017-tensorfold-mxfp4-4node/) |
+| DeepSeek V4.1 Flash 1017 — spark-ds41f | Christopher Owen's spark-ds41f-1107 TileLang/vLLM, switched TP4, NVMe disk Engram, DSpark, 1M context configured, 6-GiB KV; serving checks through 119K tokens and matched benchmark completed | [`deepseek-v4.1-flash-1017-spark-ds41f-mxfp4-4node/`](deepseek-v4.1-flash-1017-spark-ds41f-mxfp4-4node/) |
 | GLM-5.3-Flash EXL3 | EXL3/TR3 4 bpw, TP2, DFlash2, FP8 KV, 192K context | [`glm-5.3-flash-exl3-2node/`](glm-5.3-flash-exl3-2node/) |
 | GLM-5.3-Flash NVFP4 | NVIDIA NVFP4, TP2 + expert parallelism, DFlash2, FP8 KV, 192K context | [`glm-5.3-flash-nvfp4-2node/`](glm-5.3-flash-nvfp4-2node/) |
 | GLM-5.3-Flash NVFP4 | NVIDIA NVFP4, TP4 + expert parallelism, DFlash2, FP8 KV, 256K context | [`glm-5.3-flash-nvfp4-4node/`](glm-5.3-flash-nvfp4-4node/) |
@@ -77,6 +78,13 @@ has standalone attribution. Major upstream work includes:
 
 - [SparkRun](https://github.com/spark-arena/sparkrun), Apache-2.0.
 - [vLLM](https://github.com/vllm-project/vllm), Apache-2.0.
+- [Christopher Owen's spark-ds41f](https://github.com/christopherowen/spark-ds41f),
+  Apache-2.0, supplies the pinned 1107 serving integration, TileLang kernels,
+  DSpark and sparknet networking profile adapted by the
+  [DeepSeek 1017 spark-ds41f recipe](deepseek-v4.1-flash-1017-spark-ds41f-mxfp4-4node/).
+  Its upstream components retain their own licenses; the recipe includes
+  standalone Apache-2.0 [LICENSE](deepseek-v4.1-flash-1017-spark-ds41f-mxfp4-4node/LICENSE)
+  and [NOTICE](deepseek-v4.1-flash-1017-spark-ds41f-mxfp4-4node/NOTICE) files.
 - [MiaAI-Lab/GLM-5.3-Flash-EXL3-2x-DGX-Sparks](https://github.com/MiaAI-Lab/GLM-5.3-Flash-EXL3-2x-DGX-Sparks),
   MIT, which provides the GLM model conversion and patched runtime image.
 - [SparkRun recipe registry](https://github.com/spark-arena/recipe-registry),
